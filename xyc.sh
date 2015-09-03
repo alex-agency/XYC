@@ -44,8 +44,8 @@
 # camera's warranty and possibly damage your camera.  Use at your own risk!
 
 VERS="0.3.1 Alex"
-#FUSED=/tmp/fuse_d
-FUSED=`pwd`
+FUSED=/tmp/fuse_d
+#FUSED=`pwd`
 AASH=${FUSED}/autoexec.ash
 PRAWNCONF=${FUSED}/goprawn.config
 SCRIPT_DIR=$(cd `dirname "$0"` && pwd)
@@ -173,7 +173,7 @@ welcome ()
   clear
   echo ""
   echo " *  Xiaomi Yi Configurator  * "
-  echo " *  9/3/2015      ${VERS}  * "
+  echo " *  9/3/2015    ${VERS}  * "
   echo ""
 }
 
