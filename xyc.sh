@@ -173,14 +173,14 @@ welcome ()
   clear
   echo ""
   echo " *  Xiaomi Yi Configurator  * "
-  echo " *  9/3/2015    ${VERS}  * "
+  echo " *  9/4/2015    ${VERS}  * "
   echo ""
 }
 
 showMainMenu ()
 {
   local REPLY=0
-  while [[ $EXITACTION == "" ]]
+  while [ "$EXITACTION" == "" ]
   do
     echo "    ====== ${XYC_MAIN_MENU} ====="
     echo " [1] $XYC_VIEW_EDIT_SETTINGS"
@@ -267,7 +267,7 @@ showSettingsMenu ()
       6) getYiMaxInput; clear;;
       7) getVideoInput; clear;;
       8) getIncludeUserSettings; clear;;
-      9) clear;;
+      9) clear; return 0;;
       *) clear; echo "$XYC_INVALID_CHOICE"; REPLY=0;;
     esac
   done
@@ -292,7 +292,7 @@ showTimeLapseMenu ()
       2) getTLDelay; clear;;
       3) getTLOff; clear;;
       4) getTLOnce; clear;;
-      5) return 0;;
+      5) clear; return 0;;
       *) clear; echo "$XYC_INVALID_CHOICE"; REPLY=0;;
     esac
   done
@@ -305,29 +305,26 @@ showHDRMenu ()
   local REPLY=0
   while [[ $REPLY -gt -1 && $REPLY -lt 4 ]]
   do
-    if [[ -n $AUTAN && $AUTAN -eq 1 ]]; then
+    if [ $AUTAN ]; then
       if [ $ISO -eq 0 ]; then 
         echo " * ${XYC_ISO}     : ${XYC_AUTO}"
       else 
         echo " * ${XYC_ISO}     : $ISO"
       fi
-      echo " * ${XYC_HDR}1    : 900     "
-      echo " * ${XYC_HDR}2    : 1100    "
-      echo " * ${XYC_HDR}3    : 1400    "
-      echo " * ${XYC_HDR}4    : 1550    "
-      echo " * ${XYC_HDR}5    : 1750    "
-      echo " * ${XYC_HDR}6    : 2047    "
-      echo ""
-    elif [[ -n $AUTAN && $AUTAN -eq 0 ]]; then
-      if [ $ISO -eq 0 ]; then 
-        echo " * ${XYC_ISO}     : ${XYC_AUTO}"
-      else 
-        echo " * ${XYC_ISO}     : $ISO"
+      if [ $AUTAN -eq 1 ]; then
+        echo " * ${XYC_HDR}1    : 900     "
+        echo " * ${XYC_HDR}2    : 1100    "
+        echo " * ${XYC_HDR}3    : 1400    "
+        echo " * ${XYC_HDR}4    : 1550    "
+        echo " * ${XYC_HDR}5    : 1750    "
+        echo " * ${XYC_HDR}6    : 2047    "
+        echo ""
+      elif [ $AUTAN -eq 0 ]; then
+        echo " * ${XYC_HDR}1    : $HDR1   "
+        echo " * ${XYC_HDR}2    : $HDR2   "
+        echo " * ${XYC_HDR}3    : $HDR3   "
+        echo ""
       fi
-      echo " * ${XYC_HDR}1    : $HDR1   "
-      echo " * ${XYC_HDR}2    : $HDR2   "
-      echo " * ${XYC_HDR}3    : $HDR3   "
-      echo ""
     fi
     echo "    == ${XYC_HDR_MENU} =="
     echo " [1] ${XYC_HDR_AUTO}"
@@ -338,7 +335,7 @@ showHDRMenu ()
     case $REPLY in
       1) AUTAN=1; HDR1=900; HDR2=1550; HDR3=2047; getISOInput; clear;;
       2) AUTAN=0; getHDRInput; getISOInput; clear;;
-      3) return 0;;
+      3) clear; return 0;;
       *) clear; echo "$XYC_INVALID_CHOICE"; REPLY=0;;
     esac
   done
@@ -639,19 +636,19 @@ setExpView ()
 getISOInput ()
 {
   clear
-  if [[ -n $AUTAN && $AUTAN -eq 1 ]]; then
+  if [[ $AUTAN && $AUTAN -eq 1 ]]; then
     echo " * ${XYC_HDR}1    : 900          "
     echo " * ${XYC_HDR}2    : 1100         "
     echo " * ${XYC_HDR}3    : 1400         "
     echo " * ${XYC_HDR}4    : 1550         "
     echo " * ${XYC_HDR}5    : 1750         "
     echo " * ${XYC_HDR}6    : 2047         "
-  elif [[ -n $AUTAN && $AUTAN -eq 0 ]]; then
+  elif [[ $AUTAN && $AUTAN -eq 0 ]]; then
     echo " * ${XYC_HDR}1    : $HDR1        "
     echo " * ${XYC_HDR}2    : $HDR2        "
     echo " * ${XYC_HDR}3    : $HDR3        "
   else
-    echo " * ${XYC_EXPOSURE}: $EXPVIEW "
+    echo " * ${XYC_EXPOSURE}: $EXPVIEW "    
   fi
   echo ""
   echo " ******** ${XYC_ISO_MENU} ********** "
@@ -890,7 +887,7 @@ getHDRInput ()
 {
   clear
   local REPLY=0
-  while [[ $REPLY -eq 0 ]]
+  while [ $REPLY -eq 0 ]
   do
     echo " **** ${XYC_FIRST} ${XYC_HDR_EXPOSURE} ***** "
     echo " * (1)=590   (3)=700    (5)=900      * "    
@@ -930,7 +927,7 @@ getHDRInput ()
   done
   clear
   local REPLY=0
-  while [[ $REPLY -eq 0 ]]
+  while [ $REPLY -eq 0 ]
   do
     echo " * ${XYC_HDR}1    : $HDR1        "
     echo " * ${XYC_HDR}2    : $HDR2        "
@@ -1346,7 +1343,7 @@ writeAutoexec ()
     echo "t app key shutter" >> $OUTFILE
     echo "sleep 3" >> $OUTFILE
 
-    if [[ $AUTAN -eq 1 ]]; then
+    if [ $AUTAN -eq 1 ]; then
       echo "#1/48" >> $OUTFILE
       echo "t ia2 -ae still_shutter 1100" >> $OUTFILE
       echo "sleep 1" >> $OUTFILE
@@ -1366,7 +1363,7 @@ writeAutoexec ()
     echo "t app key shutter" >> $OUTFILE
     echo "sleep 2" >> $OUTFILE
 
-    if [[ $AUTAN -eq 1 ]]; then
+    if [ $AUTAN -eq 1 ]; then
       echo "#1/1631" >> $OUTFILE
       echo "t ia2 -ae still_shutter 1750" >> $OUTFILE
       echo "sleep 1" >> $OUTFILE
