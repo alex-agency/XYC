@@ -305,7 +305,7 @@ showHDRMenu ()
   local REPLY=0
   while [[ $REPLY -gt -1 && $REPLY -lt 4 ]]
   do
-    if [ $AUTAN ]; then
+    if [[ ! -z $AUTAN ]]; then
       if [ $ISO -eq 0 ]; then 
         echo " * ${XYC_ISO}     : ${XYC_AUTO}"
       else 
@@ -346,7 +346,7 @@ showSpaceUsage ()
   local JPEG_COUNT=`find ${FUSED} -name *.jpg | wc -l`
   local RAW_COUNT=`find ${FUSED} -name *.RAW | wc -l`
   local MP4_COUNT=`find ${FUSED} -name *.mp4 | wc -l`
-  local THM_COUNT=`find ${FUSED} -name *thm.mp4 | wc -l`
+  local THM_COUNT=`find ${FUSED} -name *.thm | wc -l`
 
   local SPACE_TOTAL=`df -h ${FUSED} | awk -F " " '/tmp/ {print $2}'`
   local SPACE_USED=`df -h ${FUSED} | awk -F " " '/tmp/ {print $3}'`
@@ -387,8 +387,8 @@ getCleanUpInput ()
 
 removeAllPreviews ()
 {
-  echo "${XYC_REMOVING} ${FUSED}/DCIM/100MEDIA/*thm.mp4"
-  rm -f ${FUSED}/DCIM/100MEDIA/*thm.mp4
+  echo "${XYC_REMOVING} ${FUSED}/DCIM/100MEDIA/*.thm"
+  rm -f ${FUSED}/DCIM/100MEDIA/*.thm
 }
 
 removeAllRAWs ()
@@ -538,7 +538,7 @@ getExposureInput ()
   clear
   echo " ******** ${XYC_EXPOSURE_MENU} ********* "
   echo " * (0)=Auto (12)=1/10  (24)=1/624  * "
-  echo " * (1)=8    (13)=1/15  (25)=1/752  * "
+  echo " * (1)=7.9    (13)=1/15  (25)=1/752  * "
   echo " * (2)=7.7  (14)=1/30  (26)=1/1002 * "
   echo " * (3)=6.1  (15)=1/50  (27)=1/1244 * "
   echo " * (4)=5    (16)=1/60  (28)=1/1630 * "
@@ -596,7 +596,7 @@ setExpView ()
 {
   case $EXP in 
     0) EXPVIEW="Auto";;
-    1) EXPVIEW="8 sec";;
+    1) EXPVIEW="7.9 sec";;
     8) EXPVIEW="7.7 sec";;
     50) EXPVIEW="6.1 sec";;
     84) EXPVIEW="5 sec";;
@@ -636,19 +636,19 @@ setExpView ()
 getISOInput ()
 {
   clear
-  if [[ $AUTAN && $AUTAN -eq 1 ]]; then
+  if [[ -z $AUTAN ]]; then
+  	echo " * ${XYC_EXPOSURE}: $EXPVIEW "
+  elif [ $AUTAN -eq 1 ]; then
     echo " * ${XYC_HDR}1    : 900          "
     echo " * ${XYC_HDR}2    : 1100         "
     echo " * ${XYC_HDR}3    : 1400         "
     echo " * ${XYC_HDR}4    : 1550         "
     echo " * ${XYC_HDR}5    : 1750         "
     echo " * ${XYC_HDR}6    : 2047         "
-  elif [[ $AUTAN && $AUTAN -eq 0 ]]; then
+  elif [ $AUTAN -eq 0 ]; then
     echo " * ${XYC_HDR}1    : $HDR1        "
     echo " * ${XYC_HDR}2    : $HDR2        "
     echo " * ${XYC_HDR}3    : $HDR3        "
-  else
-    echo " * ${XYC_EXPOSURE}: $EXPVIEW "    
   fi
   echo ""
   echo " ******** ${XYC_ISO_MENU} ********** "
@@ -1305,7 +1305,7 @@ writeAutoexec ()
   fi
 
   #If requested, write hdr script
-  if [[ "$SCRIPT_TYPE" == "hdr" && -n $AUTAN ]]; then
+  if [[ "$SCRIPT_TYPE" == "hdr" && ! -z $AUTAN ]]; then
     echo "#HDR script v.2 by nutsey" >> $OUTFILE
     echo "#Turn on, auto-capture 6 stills, cricket beep" >> $OUTFILE
     echo "sleep 7" >> $OUTFILE
