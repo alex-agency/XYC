@@ -1393,12 +1393,17 @@ writeAutoexec ()
 
 promptToRestart ()
 {
-  local REPLY=${XYC_N}
-  read -p "${XYC_RESTART_NOW_PROMPT}? [${XYC_ENTER}=$REPLY]: " REPLY
-  if [ -n $REPLY ]; then
-    if [ "$REPLY" == ${XYC_Y} ]; then EXITACTION="reboot"; fi
-  fi
-  clear
+  echo "Restart your camera to apply settings."
+  echo "The camera might be freezed after restart via telnet."
+  echo "If you have this issue restart camera manualy."
+  echo ""
+  # reboot may not work on 1.2.12
+  #local REPLY=${XYC_N}
+  #read -p "${XYC_RESTART_NOW_PROMPT}? [${XYC_ENTER}=$REPLY]: " REPLY
+  #if [ -n $REPLY ]; then
+  #  if [ "$REPLY" == ${XYC_Y} ]; then EXITACTION="reboot"; fi
+  #fi
+  #clear
 }
 
 
