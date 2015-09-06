@@ -173,7 +173,7 @@ welcome ()
   clear
   echo ""
   echo " *  Xiaomi Yi Configurator  * "
-  echo " *  9/4/2015    ${VERS}  * "
+  echo " *  9/6/2015    ${VERS}  * "
   echo ""
 }
 
@@ -346,7 +346,7 @@ showSpaceUsage ()
   local JPEG_COUNT=`find ${FUSED} -name *.jpg | wc -l`
   local RAW_COUNT=`find ${FUSED} -name *.RAW | wc -l`
   local MP4_COUNT=`find ${FUSED} -name *.mp4 | wc -l`
-  local THM_COUNT=`find ${FUSED} -name *.thm | wc -l`
+  local THM_COUNT=`find ${FUSED} -name *.THM | wc -l`
 
   local SPACE_TOTAL=`df -h ${FUSED} | awk -F " " '/tmp/ {print $2}'`
   local SPACE_USED=`df -h ${FUSED} | awk -F " " '/tmp/ {print $3}'`
@@ -387,14 +387,14 @@ getCleanUpInput ()
 
 removeAllPreviews ()
 {
-  echo "${XYC_REMOVING} ${FUSED}/DCIM/100MEDIA/*.thm"
-  rm -f ${FUSED}/DCIM/100MEDIA/*.thm
+  echo "${XYC_REMOVING} ${FUSED}/DCIM/100MEDIA/*.THM"
+  rm -f ${FUSED}/DCIM/100MEDIA/*.THM
 }
 
 removeAllRAWs ()
 {
-  echo "${XYC_REMOVING} ${FUSED}/DCIM/100MEDIA/*.raw"
-  rm -f ${FUSED}/DCIM/100MEDIA/*.raw
+  echo "${XYC_REMOVING} ${FUSED}/DCIM/100MEDIA/*.RAW"
+  rm -f ${FUSED}/DCIM/100MEDIA/*.RAW
 }
 
 
