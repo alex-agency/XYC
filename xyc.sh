@@ -31,6 +31,7 @@
 #
 # Changelog:
 #
+# 0.3.2 (Sep 2015) - Added JPEG Quality script
 # 0.3.1 (Sep 2015) - Ported features from XYC v4.6 https://rendy37.wordpress.com/2015/08/13/xiaomi-yi-configurator-xyc-ubah-script-tanpa-pc/
 # by Alex          - Added YiMax Movie script http://nutseynuts.blogspot.com/2015/06/xiaomi-yi-action-cam-custom-scripts.html
 #                  - Simplified menu interface
@@ -43,7 +44,7 @@
 # undocumented features of the Xiaomi Yi. Using this software may void your
 # camera's warranty and possibly damage your camera.  Use at your own risk!
 
-VERS="0.3.1 Alex"
+VERS="0.3.2 Alex"
 FUSED=/tmp/fuse_d
 #FUSED=`pwd`
 AASH=${FUSED}/autoexec.ash
@@ -75,7 +76,7 @@ XYC_SHOW_CARD_SPACE="Show SD card space usage"
 XYC_RESTART_CAMERA="Restart camera"
 XYC_EXIT="Exit"
 XYC_BACK="Back"
-XYC_SAVE_AND_BACK="Save & Back"
+XYC_SAVE_AND_BACK="<- Save & Back"
 XYC_SELECT_OPTION="Select option"
 XYC_INVALID_CHOICE="Invalid choice"
 XYC_SD_CARD_SPACE="SD Card Space"
@@ -150,6 +151,8 @@ XYC_DEFAULT="Default"
 XYC_VIDEO_RESOLUTION="Video Resolution"
 XYC_VIDEO_FREQUENCY="Video Frequency"
 XYC_VIDEO_BITRATE="Video Bitrate"
+XYC_JPEG_QUALITY="Jpeg Quality"
+XYC_JPEG_PROMPT="Set JPEG Quality to 100% (y/n)"
 
 #If language file exists, source it to override English language UI strings
 if [[ -s "$LANGUAGE_FILE" && -r "$LANGUAGE_FILE" ]]; then
@@ -212,7 +215,7 @@ showMainMenu ()
 showSettingsMenu ()
 {
   local REPLY=0
-  while [[ $REPLY -gt -1 && $REPLY -lt 9 ]]
+  while [[ $REPLY -gt -1 && $REPLY -lt 10 ]]
   do
     echo "    == ${XYC_CAMERA_SETTINGS_MENU} =="
     if [ $EXP -eq 0 ]; then 
@@ -245,17 +248,22 @@ showSettingsMenu ()
     else 
       echo " [6] ${XYC_YIMAX_MOVIE}  : ${XYC_NO}"
     fi
+    if [ $JPEG == ${XYC_Y} ]; then 
+      echo " [7] ${XYC_JPEG_QUALITY} : 100%" 
+    else 
+      echo " [7] ${XYC_JPEG_QUALITY} : ${XYC_DEFAULT}"
+    fi
     if [ $RES -eq 0 ]; then 
-      echo " [7] ${XYC_VIDEO_QUALITY}: ${XYC_DEFAULT}" 
+      echo " [8] ${XYC_VIDEO_QUALITY}: ${XYC_DEFAULT}" 
     else
-      echo " [7] ${XYC_VIDEO_QUALITY}: $RESVIEW"
+      echo " [8] ${XYC_VIDEO_QUALITY}: $RESVIEW"
     fi
     if [ $INC_USER == ${XYC_Y} ]; then 
-      echo " [8] ${XYC_USER_IMPORT}  : ${XYC_YES}" 
+      echo " [9] ${XYC_USER_IMPORT}  : ${XYC_YES}" 
     else 
-      echo " [8] ${XYC_USER_IMPORT}  : ${XYC_NO}"
+      echo " [9] ${XYC_USER_IMPORT}  : ${XYC_NO}"
     fi
-    echo " [9] ${XYC_SAVE_AND_BACK}"
+    echo " [10] ${XYC_SAVE_AND_BACK}"
 
     read -p "${XYC_SELECT_OPTION}: " REPLY
     case $REPLY in
@@ -265,9 +273,10 @@ showSettingsMenu ()
       4) getNRInput; clear;;
       5) getRawInput; clear;;
       6) getYiMaxInput; clear;;
-      7) getVideoInput; clear;;
-      8) getIncludeUserSettings; clear;;
-      9) clear; return 0;;
+      7) getJpegInput; clear;;
+      8) getVideoInput; clear;;
+      9) getIncludeUserSettings; clear;;
+      10) clear; return 0;;
       *) clear; echo "$XYC_INVALID_CHOICE"; REPLY=0;;
     esac
   done
@@ -410,6 +419,7 @@ parseCommandLine ()
       -n) RNR=$2; shift;;
       -r) RAW=$2; shift;;
       -y) YIMAX=$2; shift;;
+      -j) JPEG=$2; shift;;
       -u) INC_USER=$2; shift;;
       -q) NOUI=1;;
        *) echo "${XYC_UNKNOWN_OPTION}: $key"; shift;;
@@ -455,6 +465,9 @@ parseExistingAutoexec ()
   grep -q "#YiMAX-movie script" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then YIMAX=${XYC_Y}; fi
 
+  grep -q "writeb 0xC0BC205B" $AASH 2>/dev/null
+  if [ $? -eq 0 ]; then JPEG=${XYC_Y}; fi
+
   grep -q "writeb 0xC06CE446 0x11" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=1; FPS=1; fi
   grep -q "writeb 0xC06CE446 0x0F" $AASH 2>/dev/null
@@ -488,7 +501,7 @@ parseExistingAutoexec ()
 
 resetCameraSettings ()
 {
-  unset ISO EXP AWB RAW RNR INC_USER YIMAX RES FPS BIT
+  unset ISO EXP AWB RAW RNR INC_USER YIMAX JPEG RES FPS BIT
   setMissingValues
   promptToRestart
 }
@@ -504,6 +517,7 @@ setMissingValues ()
   if [[ "$RAW" != ${XYC_Y} && "$RAW" != ${XYC_N} ]]; then RAW=${XYC_N}; fi
   if [[ "${INC_USER}" != ${XYC_Y} && "${INC_USER}" != ${XYC_N} ]]; then INC_USER=${XYC_N}; fi
   if [[ "$YIMAX" != ${XYC_Y} && "$YIMAX" != ${XYC_N} ]]; then YIMAX=${XYC_N}; fi
+  if [[ "$JPEG" != ${XYC_Y} && "$JPEG" != ${XYC_N} ]]; then JPEG=${XYC_N}; fi
   if [ -z "$RES" ]; then RES=0; FPS=2; BIT=2; fi
   setRESView
 }
@@ -698,10 +712,18 @@ getRawInput ()
   if [[ "$REPLY" == ${XYC_Y} || "$REPLY" == ${XYC_N} ]]; then RAW=$REPLY; fi
 }
 
+getJpegInput ()
+{
+  clear 
+  local REPLY=$JPEG
+  read -p "${XYC_JPEG_PROMPT} [${XYC_ENTER}=$JPEG]: " REPLY
+  if [[ "$REPLY" == ${XYC_Y} || "$REPLY" == ${XYC_N} ]]; then JPEG=$REPLY; fi
+}
+
 getYiMaxInput ()
 {
   clear 
-  local REPLY=$TLOFF
+  local REPLY=$YIMAX
   read -p "${XYC_YIMAX_PROMPT} [${XYC_ENTER}=$YIMAX]: " REPLY
   if [[ "$REPLY" == ${XYC_Y} || "$REPLY" == ${XYC_N} ]]; then YIMAX=$REPLY; fi
 }
@@ -969,7 +991,7 @@ writeAutoexec ()
 
   #Write any necessary script commands to autoexec.ash
   echo "#Script created `date`" > $OUTFILE
-  echo "#CameraParams: $ISO $EXP $AWB $RNR $RAW $YIMAX $RES $FPS $BIT" >> $OUTFILE
+  echo "#CameraParams: $ISO $EXP $AWB $RNR $RAW $YIMAX $JPEG $RES $FPS $BIT" >> $OUTFILE
   echo "#UserSettings: $INC_USER" >> $OUTFILE
   echo "#TimeLapseParams: $TLNUM $TLONCE $TLOFF $TLDELAY" >> $OUTFILE
   echo "#HDRParams: $AUTAN $HDR1 $HDR2 $HDR3" >> $OUTFILE
@@ -1020,6 +1042,11 @@ writeAutoexec ()
     echo "#Reduce noise reduction as much as possible" >> $OUTFILE
     echo "t ia2 -adj tidx -1 -1 -1" >> $OUTFILE
     echo "" >> $OUTFILE
+  fi
+
+  if [ "$JPEG" == ${XYC_Y} ]; then
+    echo "#SET JPEG QUALITY TO 100" >> $OUTFILE
+    echo "writeb 0xC0BC205B 0x64" >> $OUTFILE
   fi
 
   if [ $RES -eq 1 ]; then
