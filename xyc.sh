@@ -31,7 +31,10 @@
 #
 # Changelog:
 #
-# 0.3.2 (Sep 2015) - Added JPEG Quality script
+# 0.3.2 (Sep 2015) - Added JPEG quality script
+# by Alex          - Added shadow/highlight/gamma script
+#                  - Fixed HDR scripts and added HDR Night
+#                  - Cricket beep at the end of script
 # 0.3.1 (Sep 2015) - Ported features from XYC v4.6 https://rendy37.wordpress.com/2015/08/13/xiaomi-yi-configurator-xyc-ubah-script-tanpa-pc/
 # by Alex          - Added YiMax Movie script http://nutseynuts.blogspot.com/2015/06/xiaomi-yi-action-cam-custom-scripts.html
 #                  - Simplified menu interface
@@ -138,8 +141,10 @@ XYC_REMOVING="Removing"
 XYC_DELETE_VIDEO_PREVIEW_PROMPT="Delete All Video Preview files (y/n)"
 XYC_DELETE_RAW_PROMPT="Delete All RAW files (y/n)"
 XYC_HDR="HDR"
-XYC_HDR_AUTO="HDR Auto"
-XYC_HDR_ADVANCED="HDR Advanced"
+XYC_HDR_AUTO_DAY="HDR Auto Day"
+XYC_HDR_AUTO_NIGHT="HDR Auto Night"
+XYC_HDR_ADVANCED="HDR Advanced Day"
+XYC_HDR_RESET="Delete HDR"
 XYC_HDR_AFTER_RESTART="HDR photos will take after restart!"
 XYC_HDR_EXPOSURE="HDR picture Exposure"
 XYC_THIRD="Third"
@@ -153,6 +158,8 @@ XYC_VIDEO_FREQUENCY="Video Frequency"
 XYC_VIDEO_BITRATE="Video Bitrate"
 XYC_JPEG_QUALITY="Jpeg Quality"
 XYC_JPEG_PROMPT="Set JPEG Quality to 100% (y/n)"
+XYC_SHADOW="Shadow Adj"
+XYC_SHADOW_PROMPT="Shadow/Highlight/Gamma clipping adjustments (y/n)"
 
 #If language file exists, source it to override English language UI strings
 if [[ -s "$LANGUAGE_FILE" && -r "$LANGUAGE_FILE" ]]; then
@@ -176,7 +183,7 @@ welcome ()
   clear
   echo ""
   echo " *  Xiaomi Yi Configurator  * "
-  echo " *  9/6/2015    ${VERS}  * "
+  echo " *  9/7/2015    ${VERS}  * "
   echo ""
 }
 
@@ -215,7 +222,7 @@ showMainMenu ()
 showSettingsMenu ()
 {
   local REPLY=0
-  while [[ $REPLY -gt -1 && $REPLY -lt 10 ]]
+  while [[ $REPLY -gt -1 && $REPLY -lt 11 ]]
   do
     echo "    == ${XYC_CAMERA_SETTINGS_MENU} =="
     if [ $EXP -eq 0 ]; then 
@@ -238,32 +245,37 @@ showSettingsMenu ()
     else 
       echo " [4] ${XYC_REDUCE_NR}    : ${XYC_NO}" 
     fi
-    if [ $RAW == ${XYC_Y} ]; then 
-      echo " [5] ${XYC_CREATE_RAW}   : ${XYC_YES}" 
+    if [ $SHADOW == ${XYC_Y} ]; then 
+      echo " [5] ${XYC_SHADOW}   : ${XYC_YES}"
     else 
-      echo " [5] ${XYC_CREATE_RAW}   : ${XYC_NO}"
+      echo " [5] ${XYC_SHADOW}   : ${XYC_NO}" 
     fi
     if [ $YIMAX == ${XYC_Y} ]; then 
       echo " [6] ${XYC_YIMAX_MOVIE}  : ${XYC_YES}" 
     else 
       echo " [6] ${XYC_YIMAX_MOVIE}  : ${XYC_NO}"
     fi
-    if [ $JPEG == ${XYC_Y} ]; then 
-      echo " [7] ${XYC_JPEG_QUALITY} : 100%" 
+    if [ $RAW == ${XYC_Y} ]; then 
+      echo " [7] ${XYC_CREATE_RAW}   : ${XYC_YES}" 
     else 
-      echo " [7] ${XYC_JPEG_QUALITY} : ${XYC_DEFAULT}"
+      echo " [7] ${XYC_CREATE_RAW}   : ${XYC_NO}"
+    fi
+    if [ $JPEG == ${XYC_Y} ]; then 
+      echo " [8] ${XYC_JPEG_QUALITY} : 100%" 
+    else 
+      echo " [8] ${XYC_JPEG_QUALITY} : ${XYC_DEFAULT}"
     fi
     if [ $RES -eq 0 ]; then 
-      echo " [8] ${XYC_VIDEO_QUALITY}: ${XYC_DEFAULT}" 
+      echo " [9] ${XYC_VIDEO_QUALITY}: ${XYC_DEFAULT}" 
     else
-      echo " [8] ${XYC_VIDEO_QUALITY}: $RESVIEW"
+      echo " [9] ${XYC_VIDEO_QUALITY}: $RESVIEW"
     fi
     if [ $INC_USER == ${XYC_Y} ]; then 
-      echo " [9] ${XYC_USER_IMPORT}  : ${XYC_YES}" 
+      echo " [10] ${XYC_USER_IMPORT} : ${XYC_YES}" 
     else 
-      echo " [9] ${XYC_USER_IMPORT}  : ${XYC_NO}"
+      echo " [10] ${XYC_USER_IMPORT} : ${XYC_NO}"
     fi
-    echo " [10] ${XYC_SAVE_AND_BACK}"
+    echo " [11] ${XYC_SAVE_AND_BACK}"
 
     read -p "${XYC_SELECT_OPTION}: " REPLY
     case $REPLY in
@@ -271,12 +283,13 @@ showSettingsMenu ()
       2) getISOInput; clear;;
       3) getAWBInput; clear;;
       4) getNRInput; clear;;
-      5) getRawInput; clear;;
+      5) getShadowInput; clear;;
       6) getYiMaxInput; clear;;
-      7) getJpegInput; clear;;
-      8) getVideoInput; clear;;
-      9) getIncludeUserSettings; clear;;
-      10) clear; return 0;;
+      7) getRawInput; clear;;
+      8) getJpegInput; clear;;
+      9) getVideoInput; clear;;
+      10) getIncludeUserSettings; clear;;
+      11) clear; return 0;;
       *) clear; echo "$XYC_INVALID_CHOICE"; REPLY=0;;
     esac
   done
@@ -320,31 +333,43 @@ showHDRMenu ()
       else 
         echo " * ${XYC_ISO}     : $ISO"
       fi
-      if [ $AUTAN -eq 1 ]; then
-        echo " * ${XYC_HDR}1    : 900     "
-        echo " * ${XYC_HDR}2    : 1100    "
-        echo " * ${XYC_HDR}3    : 1400    "
-        echo " * ${XYC_HDR}4    : 1550    "
-        echo " * ${XYC_HDR}5    : 1750    "
-        echo " * ${XYC_HDR}6    : 2047    "
+      if [ $AUTAN -eq 2 ]; then
+        echo " * ${XYC_HDR}1    : 7.9 sec   "
+        echo " * ${XYC_HDR}2    : 5.4 sec   "
+        echo " * ${XYC_HDR}3    : 3.5 sec   "
+        echo " * ${XYC_HDR}4    : 1.8 sec   "
+        echo " * ${XYC_HDR}5    : 1.0 sec   "
+        echo " * ${XYC_HDR}6    : 1/15 sec  "
+        echo ""
+      elif [ $AUTAN -eq 1 ]; then
+        echo " * ${XYC_HDR}1    : 1/15 sec  "
+        echo " * ${XYC_HDR}2    : 1/50 sec  "
+        echo " * ${XYC_HDR}3    : 1/245 sec "
+        echo " * ${XYC_HDR}4    : 1/520 sec "
+        echo " * ${XYC_HDR}5    : 1/1630 sec"
+        echo " * ${XYC_HDR}6    : 1/8147 sec"
         echo ""
       elif [ $AUTAN -eq 0 ]; then
-        echo " * ${XYC_HDR}1    : $HDR1   "
-        echo " * ${XYC_HDR}2    : $HDR2   "
-        echo " * ${XYC_HDR}3    : $HDR3   "
+        echo " * ${XYC_HDR}1    : $HDR1     "
+        echo " * ${XYC_HDR}2    : $HDR2     "
+        echo " * ${XYC_HDR}3    : $HDR3     "
         echo ""
       fi
     fi
     echo "    == ${XYC_HDR_MENU} =="
-    echo " [1] ${XYC_HDR_AUTO}"
-    echo " [2] ${XYC_HDR_ADVANCED}"
-    echo " [3] $XYC_SAVE_AND_BACK"
+    echo " [1] ${XYC_HDR_AUTO_NIGHT}"
+    echo " [2] ${XYC_HDR_AUTO_DAY}"
+    echo " [3] ${XYC_HDR_ADVANCED}"
+    echo " [4] ${XYC_HDR_RESET}"
+    echo " [5] $XYC_SAVE_AND_BACK"
 
     read -p "${XYC_SELECT_OPTION}: " REPLY
     case $REPLY in
-      1) AUTAN=1; HDR1=900; HDR2=1550; HDR3=2047; getISOInput; clear;;
-      2) AUTAN=0; getHDRInput; getISOInput; clear;;
-      3) clear; return 0;;
+      1) AUTAN=2; HDR1=1; HDR2=300; HDR3=900; getISOInput; clear;;
+      2) AUTAN=1; HDR1=900; HDR2=1550; HDR3=2047; getISOInput; clear;;
+      3) AUTAN=0; getHDRInput; getISOInput; clear;;
+      4) unset AUTAN; clear; return 0;;
+      5) clear; return 0;;
       *) clear; echo "$XYC_INVALID_CHOICE"; REPLY=0;;
     esac
   done
@@ -355,7 +380,7 @@ showSpaceUsage ()
   local JPEG_COUNT=`find ${FUSED} -name *.jpg | wc -l`
   local RAW_COUNT=`find ${FUSED} -name *.RAW | wc -l`
   local MP4_COUNT=`find ${FUSED} -name *.mp4 | wc -l`
-  local THM_COUNT=`find ${FUSED} -name *.THM | wc -l`
+  local THM_COUNT=`find ${FUSED} -name *.THM | *thm.mp4 | wc -l`
 
   local SPACE_TOTAL=`df -h ${FUSED} | awk -F " " '/tmp/ {print $2}'`
   local SPACE_USED=`df -h ${FUSED} | awk -F " " '/tmp/ {print $3}'`
@@ -398,6 +423,8 @@ removeAllPreviews ()
 {
   echo "${XYC_REMOVING} ${FUSED}/DCIM/100MEDIA/*.THM"
   rm -f ${FUSED}/DCIM/100MEDIA/*.THM
+  echo "${XYC_REMOVING} ${FUSED}/DCIM/100MEDIA/*thm.mp4"
+  rm -f ${FUSED}/DCIM/100MEDIA/*thm.mp4
 }
 
 removeAllRAWs ()
@@ -420,6 +447,7 @@ parseCommandLine ()
       -r) RAW=$2; shift;;
       -y) YIMAX=$2; shift;;
       -j) JPEG=$2; shift;;
+      -s) SHADOW=$2; shift;;
       -u) INC_USER=$2; shift;;
       -q) NOUI=1;;
        *) echo "${XYC_UNKNOWN_OPTION}: $key"; shift;;
@@ -468,6 +496,9 @@ parseExistingAutoexec ()
   grep -q "writeb 0xC0BC205B" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then JPEG=${XYC_Y}; fi
 
+  grep -q "t ia2 -adj autoknee" $AASH 2>/dev/null
+  if [ $? -eq 0 ]; then SHADOW=${XYC_Y}; fi
+
   grep -q "writeb 0xC06CE446 0x11" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=1; FPS=1; fi
   grep -q "writeb 0xC06CE446 0x0F" $AASH 2>/dev/null
@@ -501,7 +532,10 @@ parseExistingAutoexec ()
 
 resetCameraSettings ()
 {
-  unset ISO EXP AWB RAW RNR INC_USER YIMAX JPEG RES FPS BIT
+  unset RES FPS BIT
+  unset AWB RNR YIMAX SHADOW 
+  unset ISO EXP JPEG RAW
+  unset INC_USER
   setMissingValues
   promptToRestart
 }
@@ -518,6 +552,7 @@ setMissingValues ()
   if [[ "${INC_USER}" != ${XYC_Y} && "${INC_USER}" != ${XYC_N} ]]; then INC_USER=${XYC_N}; fi
   if [[ "$YIMAX" != ${XYC_Y} && "$YIMAX" != ${XYC_N} ]]; then YIMAX=${XYC_N}; fi
   if [[ "$JPEG" != ${XYC_Y} && "$JPEG" != ${XYC_N} ]]; then JPEG=${XYC_N}; fi
+  if [[ "$SHADOW" != ${XYC_Y} && "$SHADOW" != ${XYC_N} ]]; then SHADOW=${XYC_N}; fi
   if [ -z "$RES" ]; then RES=0; FPS=2; BIT=2; fi
   setRESView
 }
@@ -552,7 +587,7 @@ getExposureInput ()
   clear
   echo " ******** ${XYC_EXPOSURE_MENU} ********* "
   echo " * (0)=Auto (12)=1/10  (24)=1/624  * "
-  echo " * (1)=7.9    (13)=1/15  (25)=1/752  * "
+  echo " * (1)=7.9  (13)=1/15  (25)=1/752  * "
   echo " * (2)=7.7  (14)=1/30  (26)=1/1002 * "
   echo " * (3)=6.1  (15)=1/50  (27)=1/1244 * "
   echo " * (4)=5    (16)=1/60  (28)=1/1630 * "
@@ -651,26 +686,33 @@ getISOInput ()
 {
   clear
   if [[ -z $AUTAN ]]; then
-  	echo " * ${XYC_EXPOSURE}: $EXPVIEW "
+    echo " * ${XYC_EXPOSURE}: $EXPVIEW "
+  elif [ $AUTAN -eq 2 ]; then
+    echo " * ${XYC_HDR}1    : 7.9 sec   "
+    echo " * ${XYC_HDR}2    : 5.4 sec   "
+    echo " * ${XYC_HDR}3    : 3.5 sec   "
+    echo " * ${XYC_HDR}4    : 1.8 sec   "
+    echo " * ${XYC_HDR}5    : 1.0 sec   "
+    echo " * ${XYC_HDR}6    : 1/15 sec  "
   elif [ $AUTAN -eq 1 ]; then
-    echo " * ${XYC_HDR}1    : 900          "
-    echo " * ${XYC_HDR}2    : 1100         "
-    echo " * ${XYC_HDR}3    : 1400         "
-    echo " * ${XYC_HDR}4    : 1550         "
-    echo " * ${XYC_HDR}5    : 1750         "
-    echo " * ${XYC_HDR}6    : 2047         "
+    echo " * ${XYC_HDR}1    : 1/15 sec  "
+    echo " * ${XYC_HDR}2    : 1/50 sec  "
+    echo " * ${XYC_HDR}3    : 1/245 sec "
+    echo " * ${XYC_HDR}4    : 1/520 sec "
+    echo " * ${XYC_HDR}5    : 1/1630 sec"
+    echo " * ${XYC_HDR}6    : 1/8147 sec"
   elif [ $AUTAN -eq 0 ]; then
-    echo " * ${XYC_HDR}1    : $HDR1        "
-    echo " * ${XYC_HDR}2    : $HDR2        "
-    echo " * ${XYC_HDR}3    : $HDR3        "
+    echo " * ${XYC_HDR}1    : $HDR1     "
+    echo " * ${XYC_HDR}2    : $HDR2     "
+    echo " * ${XYC_HDR}3    : $HDR3     "
   fi
   echo ""
-  echo " ******** ${XYC_ISO_MENU} ********** "
-  echo " * (0)=Auto  (5)=1600              * "
-  echo " * (1)=100   (6)=3200              * "
-  echo " * (2)=200   (7)=6400              * "
-  echo " * (3)=400   (8)=12800 Warning!    * "
-  echo " * (4)=800   (9)=25600 Warning!    * "
+  echo " *********** ${XYC_ISO_MENU} *********** "
+  echo " * (0)=Auto   (5)=1600             * "
+  echo " * (1)=100    (6)=3200             * "
+  echo " * (2)=200    (7)=6400             * "
+  echo " * (3)=400    (8)=12800 Warning!   * "
+  echo " * (4)=800    (9)=25600 Warning!   * "
   echo " *********************************** "
   local REPLY=$ISO
   read -p "${XYC_SELECT_OPTION}: 0-9: " REPLY
@@ -702,6 +744,14 @@ getNRInput ()
   local REPLY=$RNR
   read -p "${XYC_REDUCE_NR_PROMPT} [${XYC_ENTER}=$RNR]: " REPLY
   if [[ "$REPLY" == ${XYC_Y} || "$REPLY" == ${XYC_N} ]]; then RNR=$REPLY; fi
+}
+
+getShadowInput ()
+{
+  clear 
+  local REPLY=$SHADOW
+  read -p "${XYC_SHADOW_PROMPT} [${XYC_ENTER}=$SHADOW]: " REPLY
+  if [[ "$REPLY" == ${XYC_Y} || "$REPLY" == ${XYC_N} ]]; then SHADOW=$REPLY; fi
 }
 
 getRawInput ()
@@ -911,18 +961,18 @@ getHDRInput ()
   local REPLY=0
   while [ $REPLY -eq 0 ]
   do
-    echo " **** ${XYC_FIRST} ${XYC_HDR_EXPOSURE} ***** "
-    echo " * (1)=590   (3)=700    (5)=900      * "    
-    echo " * (2)=600   (4)=800    (6)=1000     * "
+    echo " *** ${XYC_FIRST} ${XYC_HDR_EXPOSURE} **** "
+    echo " * (1)=1/50   (3)=1/80   (5)=1/140 * "    
+    echo " * (2)=1/60   (4)=1/125  (6)=1/250 * "
     echo " *********************************** "
     read -p "${XYC_SELECT_OPTION}: " REPLY
     case $REPLY in
-      1) HDR1=590; HEHE1=1; clear;;
-      2) HDR1=600; HEHE1=2; clear;;
-      3) HDR1=700; HEHE1=3; clear;;
-      4) HDR1=800; HEHE1=4; clear;;
-      5) HDR1=900; HEHE1=5; clear;;
-      6) HDR1=1000; HEHE1=6; clear;;
+      1) HDR1=1100; HEHE1=1; clear;;
+      2) HDR1=1145; HEHE1=2; clear;;
+      3) HDR1=1200; HEHE1=3; clear;;
+      4) HDR1=1275; HEHE1=4; clear;;
+      5) HDR1=1300; HEHE1=5; clear;;
+      6) HDR1=1405; HEHE1=6; clear;;
       *) clear; echo "${XYC_INVALID_CHOICE}"; REPLY=0;;
     esac
   done
@@ -933,17 +983,17 @@ getHDRInput ()
     echo " * ${XYC_HDR}1    : $HDR1        "
     echo ""
     echo " *** ${XYC_SECOND} ${XYC_HDR_EXPOSURE} *** "
-    echo " * (1)=1275   (3)=1405    (5)=1500 * "    
-    echo " * (2)=1300   (4)=1450    (6)=1531 * "
+    echo " * (1)=1/420  (3)=1/624 (5)=1/1002 * "    
+    echo " * (2)=1/500  (4)=1/752 (6)=1/1244 * "
     echo " *********************************** "
     read -p "${XYC_SELECT_OPTION}: " REPLY
     case $REPLY in
-      1) HDR2=1275; HEHE2=1; clear;;
-      2) HDR2=1300; HEHE2=2; clear;;
-      3) HDR2=1405; HEHE2=3; clear;;
-      4) HDR2=1450; HEHE2=4; clear;;
-      5) HDR2=1500; HEHE2=5; clear;;
-      6) HDR1=1531; HEHE2=6; clear;;
+      1) HDR2=1500; HEHE2=1; clear;;
+      2) HDR2=1531; HEHE2=2; clear;;
+      3) HDR2=1600; HEHE2=3; clear;;
+      4) HDR2=1607; HEHE2=4; clear;;
+      5) HDR2=1660; HEHE2=5; clear;;
+      6) HDR2=1700; HEHE2=6; clear;;
       *) clear; echo "${XYC_INVALID_CHOICE}"; REPLY=0;;
     esac
   done
@@ -955,9 +1005,9 @@ getHDRInput ()
     echo " * ${XYC_HDR}2    : $HDR2        "
     echo ""
     echo " **** ${XYC_THIRD} ${XYC_HDR_EXPOSURE} **** "
-    echo " * (1)=1800   (3)=1850    (5)=2000 * "    
-    echo " * (2)=1825   (4)=1900    (6)=2047 * "
-    echo " *********************************** "
+    echo " * (1)=1/2138 (3)=1/2803 (5)=1/6316 * "    
+    echo " * (2)=1/2448 (4)=1/3675 (6)=1/8147 * "
+    echo " ************************************ "
     read -p "${XYC_SELECT_OPTION}: " REPLY
     case $REPLY in
       1) HDR3=1800; HEHE3=1; clear;;
@@ -986,12 +1036,13 @@ writeAutoexec ()
 {
   OUTFILE=${1:-$AASH}
   SCRIPT_TYPE=${2:-"settings"}
-
   echo "${XYC_WRITING} $OUTFILE"
 
   #Write any necessary script commands to autoexec.ash
   echo "#Script created `date`" > $OUTFILE
-  echo "#CameraParams: $ISO $EXP $AWB $RNR $RAW $YIMAX $JPEG $RES $FPS $BIT" >> $OUTFILE
+  echo "#VideoResolution: $RES $FPS $BIT" >> $OUTFILE
+  echo "#CameraParams: $AWB $RNR $YIMAX $SHADOW" >> $OUTFILE
+  echo "#PhotoParams: $ISO $EXP $JPEG $RAW" >> $OUTFILE
   echo "#UserSettings: $INC_USER" >> $OUTFILE
   echo "#TimeLapseParams: $TLNUM $TLONCE $TLOFF $TLDELAY" >> $OUTFILE
   echo "#HDRParams: $AUTAN $HDR1 $HDR2 $HDR3" >> $OUTFILE
@@ -1012,17 +1063,21 @@ writeAutoexec ()
   fi
 
   if [ "$YIMAX" == ${XYC_Y} ]; then
-    echo "#YiMAX-movie script by nutsey for 1.2.10 firmware" >> $OUTFILE
+    echo "#YiMAX-movie script by nutsey" >> $OUTFILE
     echo "#This script is for video mode!" >> $OUTFILE
     echo "t ia2 -adj ev 10 0 60 0 0 140 0" >> $OUTFILE
-    echo "" >> $OUTFILE
-    # too dark :(
-    #echo "#shadow/highlight clipping adjustments" >> $OUTFILE
     echo "#this makes blacks not crushed" >> $OUTFILE
     echo "t ia2 -adj l_expo 163" >> $OUTFILE
-    #echo "t ia2 -adj autoknee 255" >> $OUTFILE
-    #echo "#set gamma level" >> $OUTFILE
-    #echo "t ia2 -adj gamma 220" >> $OUTFILE
+    echo "#enable 14 scene mode" >> $OUTFILE
+    echo "t cal -sc 14" >> $OUTFILE
+    echo "" >> $OUTFILE
+  fi
+
+  if [ "$SHADOW" == ${XYC_Y} ]; then
+    echo "#shadow/highlight clipping adjustments" >> $OUTFILE
+    echo "t ia2 -adj autoknee 255" >> $OUTFILE
+    echo "#set gamma level" >> $OUTFILE
+    echo "t ia2 -adj gamma 220" >> $OUTFILE
     echo "" >> $OUTFILE
   fi
 
@@ -1045,8 +1100,9 @@ writeAutoexec ()
   fi
 
   if [ "$JPEG" == ${XYC_Y} ]; then
-    echo "#SET JPEG QUALITY TO 100" >> $OUTFILE
+    echo "#Set JPEG quality to 100%" >> $OUTFILE
     echo "writeb 0xC0BC205B 0x64" >> $OUTFILE
+    echo "" >> $OUTFILE
   fi
 
   if [ $RES -eq 1 ]; then
@@ -1263,21 +1319,14 @@ writeAutoexec ()
     echo "sleep 9" >> $OUTFILE
     echo "#load GoPrawn config" >> $OUTFILE
     echo "t cal -ituner load d:\goprawn.config" >> $OUTFILE
-    echo "" >> $OUTFILE
-
     echo "sleep 1" >> $OUTFILE
     echo "#fix ae/awb/adj locks" >> $OUTFILE
     echo "t ia2 -3a 1 1 0 1" >> $OUTFILE
-    echo "#ready beep" >> $OUTFILE
-    echo "t pwm 1 enable" >> $OUTFILE
-    echo "sleep 1" >> $OUTFILE
-    echo "t pwm 1 disable" >> $OUTFILE
-
+    echo "" >> $OUTFILE
 
     echo "Writing $PRAWNCONF"
     #Write any necessary script commands to goprawn.config
     echo "#Script created `date`" > $PRAWNCONF
-
     echo "#GoPrawn config by nutsey" >> $PRAWNCONF
     echo "system.user_mode Normal" >> $PRAWNCONF
     echo "system.tuning_mode IMG_MODE_VIDEO" >> $PRAWNCONF
@@ -1302,7 +1351,6 @@ writeAutoexec ()
     echo "chromatic_aberration_correction.enable 1" >> $PRAWNCONF
     echo "directional_sharpening.enable 0" >> $PRAWNCONF
     echo "chroma_filt.enable 0" >> $PRAWNCONF
-    echo "" >> $OUTFILE
   fi
   
   #If requested, write time-lapse script
@@ -1333,8 +1381,7 @@ writeAutoexec ()
 
   #If requested, write hdr script
   if [[ "$SCRIPT_TYPE" == "hdr" && ! -z $AUTAN ]]; then
-    echo "#HDR script v.2 by nutsey" >> $OUTFILE
-    echo "#Turn on, auto-capture 6 stills, cricket beep" >> $OUTFILE
+    echo "#HDR script by nutsey" >> $OUTFILE
     echo "sleep 7" >> $OUTFILE
     
     echo "#BEEP: 1 times 1-second long beep" >> $OUTFILE
@@ -1354,24 +1401,19 @@ writeAutoexec ()
     echo "sleep 1" >> $OUTFILE
     echo "t pwm 1 disable" >> $OUTFILE
     echo "sleep 1" >> $OUTFILE
-    
-    echo "#BEEP: 1 times 2-second long beep" >> $OUTFILE
-    echo "sleep 1" >> $OUTFILE
-    echo "t pwm 1 set_level 120" >> $OUTFILE
-    echo "sleep 1" >> $OUTFILE
-    echo "t pwm 1 enable" >> $OUTFILE
-    echo "sleep 2" >> $OUTFILE
-    echo "t pwm 1 disable" >> $OUTFILE
-    echo "sleep 1" >> $OUTFILE
-    
-    echo "#1/16" >> $OUTFILE
+
     echo "t ia2 -ae still_shutter $HDR1" >> $OUTFILE
     echo "sleep 1" >> $OUTFILE
-    echo "t app key shutter" >> $OUTFILE
-    echo "sleep 3" >> $OUTFILE
+    if [ $AUTAN -eq 2 ]; then
+      echo "t cal -raw 2 1 0" >> $OUTFILE
+      echo "sleep 18" >> $OUTFILE
+    else
+      echo "t app key shutter" >> $OUTFILE
+      echo "sleep 3" >> $OUTFILE
+    fi
 
     if [ $AUTAN -eq 1 ]; then
-      echo "#1/48" >> $OUTFILE
+      echo "#1/50" >> $OUTFILE
       echo "t ia2 -ae still_shutter 1100" >> $OUTFILE
       echo "sleep 1" >> $OUTFILE
       echo "t app key shutter" >> $OUTFILE
@@ -1382,38 +1424,78 @@ writeAutoexec ()
       echo "sleep 1" >> $OUTFILE
       echo "t app key shutter" >> $OUTFILE
       echo "sleep 2" >> $OUTFILE
+    elif [ $AUTAN -eq 2 ]; then
+      echo "#5.4" >> $OUTFILE
+      echo "t ia2 -ae still_shutter 70" >> $OUTFILE
+      echo "sleep 1" >> $OUTFILE
+      echo "t cal -raw 2 1 0" >> $OUTFILE
+      echo "sleep 15" >> $OUTFILE
+      
+      echo "#3.5" >> $OUTFILE
+      echo "t ia2 -ae still_shutter 150" >> $OUTFILE
+      echo "sleep 1" >> $OUTFILE
+      echo "t cal -raw 2 1 0" >> $OUTFILE
+      echo "sleep 13" >> $OUTFILE
     fi
 
-    echo "#1/552" >> $OUTFILE
     echo "t ia2 -ae still_shutter $HDR2" >> $OUTFILE
     echo "sleep 1" >> $OUTFILE
-    echo "t app key shutter" >> $OUTFILE
-    echo "sleep 2" >> $OUTFILE
-
-    if [ $AUTAN -eq 1 ]; then
-      echo "#1/1631" >> $OUTFILE
-      echo "t ia2 -ae still_shutter 1750" >> $OUTFILE
-      echo "sleep 1" >> $OUTFILE
+    if [ $AUTAN -eq 2 ]; then
+      echo "t cal -raw 2 1 0" >> $OUTFILE
+      echo "sleep 12" >> $OUTFILE
+    else
       echo "t app key shutter" >> $OUTFILE
       echo "sleep 2" >> $OUTFILE
     fi
 
-    echo "#1/8147 MIN SHUTTER" >> $OUTFILE
+    if [ $AUTAN -eq 1 ]; then
+      echo "#1/1630" >> $OUTFILE
+      echo "t ia2 -ae still_shutter 1750" >> $OUTFILE
+      echo "sleep 1" >> $OUTFILE
+      echo "t app key shutter" >> $OUTFILE
+      echo "sleep 2" >> $OUTFILE
+    elif [ $AUTAN -eq 2 ]; then
+      echo "#1.0" >> $OUTFILE
+      echo "t ia2 -ae still_shutter 500" >> $OUTFILE
+      echo "sleep 1" >> $OUTFILE
+      echo "t cal -raw 2 1 0" >> $OUTFILE
+      echo "sleep 12" >> $OUTFILE
+    fi
+
     echo "t ia2 -ae still_shutter $HDR3" >> $OUTFILE
     echo "sleep 1" >> $OUTFILE
-    echo "t app key shutter" >> $OUTFILE
-    echo "sleep 2" >> $OUTFILE
-    
-    echo "#BEEP: 1 times 2-second long beep" >> $OUTFILE
-    echo "sleep 1" >> $OUTFILE
-    echo "t pwm 1 set_level 120" >> $OUTFILE
-    echo "sleep 1" >> $OUTFILE
-    echo "t pwm 1 enable" >> $OUTFILE
-    echo "sleep 2" >> $OUTFILE
-    echo "t pwm 1 disable" >> $OUTFILE
+    if [ $AUTAN -eq 2 ]; then
+      echo "t cal -raw 2 1 0" >> $OUTFILE
+      echo "sleep 10" >> $OUTFILE
+    else
+      echo "t app key shutter" >> $OUTFILE
+      echo "sleep 2" >> $OUTFILE
+    fi
     
     echo "" >> $OUTFILE
   fi
+
+  echo "#Cricket beep" >> $OUTFILE
+  echo "t pwm 1 enable" >> $OUTFILE
+  echo "usleep 150" >> $OUTFILE
+  echo "t pwm 1 disable" >> $OUTFILE
+  echo "usleep 150" >> $OUTFILE
+  echo "t pwm 1 enable" >> $OUTFILE
+  echo "usleep 150" >> $OUTFILE
+  echo "t pwm 1 disable" >> $OUTFILE
+  echo "usleep 150" >> $OUTFILE
+  echo "t pwm 1 enable" >> $OUTFILE
+  echo "usleep 150" >> $OUTFILE
+  echo "t pwm 1 disable" >> $OUTFILE
+  echo "usleep 150" >> $OUTFILE
+  echo "t pwm 1 enable" >> $OUTFILE
+  echo "usleep 150" >> $OUTFILE
+  echo "t pwm 1 disable" >> $OUTFILE
+  echo "usleep 150" >> $OUTFILE
+  echo "t pwm 1 enable" >> $OUTFILE
+  echo "usleep 150" >> $OUTFILE
+  echo "t pwm 1 disable" >> $OUTFILE
+  echo "" >> $OUTFILE
   
   promptToRestart
 }
