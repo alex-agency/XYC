@@ -228,6 +228,7 @@ showSettingsMenu ()
     if [ $EXP -eq 0 ]; then 
       echo " [1] ${XYC_EXPOSURE}     : ${XYC_AUTO}" 
     else 
+      expView $EXP
       echo " [1] ${XYC_EXPOSURE}     : $EXPVIEW"
     fi
     if [ $ISO -eq 0 ]; then 
@@ -350,9 +351,12 @@ showHDRMenu ()
         echo " * ${XYC_HDR}6    : 1/8147 sec"
         echo ""
       elif [ $AUTAN -eq 0 ]; then
-        echo " * ${XYC_HDR}1    : $HDR1     "
-        echo " * ${XYC_HDR}2    : $HDR2     "
-        echo " * ${XYC_HDR}3    : $HDR3     "
+        expView $HDR1
+        echo " * ${XYC_HDR}1    : $EXPVIEW  "
+        expView $HDR2
+        echo " * ${XYC_HDR}2    : $EXPVIEW  "
+        expView $HDR3
+        echo " * ${XYC_HDR}3    : $EXPVIEW  "
         echo ""
       fi
     fi
@@ -380,7 +384,7 @@ showSpaceUsage ()
   local JPEG_COUNT=`find ${FUSED} -name *.jpg | wc -l`
   local RAW_COUNT=`find ${FUSED} -name *.RAW | wc -l`
   local MP4_COUNT=`find ${FUSED} -name *.mp4 | wc -l`
-  local THM_COUNT=`find ${FUSED} -name *.THM | *thm.mp4 | wc -l`
+  local THM_COUNT=`find ${FUSED} -name *.THM -o -name *thm.mp4 | wc -l`
 
   local SPACE_TOTAL=`df -h ${FUSED} | awk -F " " '/tmp/ {print $2}'`
   local SPACE_USED=`df -h ${FUSED} | awk -F " " '/tmp/ {print $3}'`
@@ -545,7 +549,6 @@ setMissingValues ()
   #Set reasonable defaults for any missing values
   if [ -z "$ISO" ]; then ISO=0; fi
   if [ -z "$EXP" ]; then EXP=0; fi
-  setExpView
   if [[ "$AWB" != ${XYC_Y} && "$AWB" != ${XYC_N} ]]; then AWB=${XYC_Y}; fi
   if [[ "$RNR" != ${XYC_Y} && "$RNR" != ${XYC_N} ]]; then RNR=${XYC_N}; fi
   if [[ "$RAW" != ${XYC_Y} && "$RAW" != ${XYC_N} ]]; then RAW=${XYC_N}; fi
@@ -553,8 +556,7 @@ setMissingValues ()
   if [[ "$YIMAX" != ${XYC_Y} && "$YIMAX" != ${XYC_N} ]]; then YIMAX=${XYC_N}; fi
   if [[ "$JPEG" != ${XYC_Y} && "$JPEG" != ${XYC_N} ]]; then JPEG=${XYC_N}; fi
   if [[ "$SHADOW" != ${XYC_Y} && "$SHADOW" != ${XYC_N} ]]; then SHADOW=${XYC_N}; fi
-  if [ -z "$RES" ]; then RES=0; FPS=2; BIT=2; fi
-  setRESView
+  if [ -z "$RES" ]; then RES=0; FPS=2; BIT=2; else setRESView; fi
 }
 
 resetDelaySuggestion ()
@@ -638,12 +640,11 @@ getExposureInput ()
     33) EXP=2000;;
     34) EXP=2047;;
   esac
-  setExpView
 }
 
-setExpView ()
+expView ()
 {
-  case $EXP in 
+  case $1 in 
     0) EXPVIEW="Auto";;
     1) EXPVIEW="7.9 sec";;
     8) EXPVIEW="7.7 sec";;
@@ -686,6 +687,7 @@ getISOInput ()
 {
   clear
   if [[ -z $AUTAN ]]; then
+    expView $EXP
     echo " * ${XYC_EXPOSURE}: $EXPVIEW "
   elif [ $AUTAN -eq 2 ]; then
     echo " * ${XYC_HDR}1    : 7.9 sec   "
@@ -702,9 +704,12 @@ getISOInput ()
     echo " * ${XYC_HDR}5    : 1/1630 sec"
     echo " * ${XYC_HDR}6    : 1/8147 sec"
   elif [ $AUTAN -eq 0 ]; then
-    echo " * ${XYC_HDR}1    : $HDR1     "
-    echo " * ${XYC_HDR}2    : $HDR2     "
-    echo " * ${XYC_HDR}3    : $HDR3     "
+    expView $HDR1
+    echo " * ${XYC_HDR}1    : $EXPVIEW  "
+    expView $HDR2
+    echo " * ${XYC_HDR}2    : $EXPVIEW  "
+    expView $HDR3
+    echo " * ${XYC_HDR}3    : $EXPVIEW  "
   fi
   echo ""
   echo " *********** ${XYC_ISO_MENU} *********** "
@@ -977,10 +982,12 @@ getHDRInput ()
     esac
   done
   clear
+  expView $HDR1
+  HDR1VIEW=$EXPVIEW
   local REPLY=0
   while [[ $REPLY -eq 0 ]]
   do
-    echo " * ${XYC_HDR}1    : $HDR1        "
+    echo " * ${XYC_HDR}1    : $HDR1VIEW        "
     echo ""
     echo " *** ${XYC_SECOND} ${XYC_HDR_EXPOSURE} *** "
     echo " * (1)=1/420  (3)=1/624 (5)=1/1002 * "    
@@ -998,11 +1005,13 @@ getHDRInput ()
     esac
   done
   clear
+  expView $HDR2
+  HDR2VIEW=$EXPVIEW
   local REPLY=0
   while [ $REPLY -eq 0 ]
   do
-    echo " * ${XYC_HDR}1    : $HDR1        "
-    echo " * ${XYC_HDR}2    : $HDR2        "
+    echo " * ${XYC_HDR}1    : $HDR1VIEW        "
+    echo " * ${XYC_HDR}2    : $HDR2VIEW        "
     echo ""
     echo " **** ${XYC_THIRD} ${XYC_HDR_EXPOSURE} **** "
     echo " * (1)=1/2138 (3)=1/2803 (5)=1/6316 * "    
