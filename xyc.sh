@@ -33,6 +33,7 @@
 #
 # 0.3.2 (Sep 2015) - Updated YiMax script
 # by Alex          - Added shadow/highlight/gamma script
+#                  - Added sharpness script
 #                  - Fixed HDR scripts and added HDR Night
 # 0.3.1 (Sep 2015) - Ported features from XYC v4.6 https://rendy37.wordpress.com/2015/08/13/xiaomi-yi-configurator-xyc-ubah-script-tanpa-pc/
 # by Alex          - Added YiMax Movie script http://nutseynuts.blogspot.com/2015/06/xiaomi-yi-action-cam-custom-scripts.html
@@ -51,6 +52,7 @@ FUSED=/tmp/fuse_d
 #FUSED=`pwd`
 AASH=${FUSED}/autoexec.ash
 PRAWNCONF=${FUSED}/goprawn.config
+CORCONF=${FUSED}/coring.config
 SCRIPT_DIR=$(cd `dirname "$0"` && pwd)
 THIS_SCRIPT="$SCRIPT_DIR/`basename "$0"`"
 LANGUAGE_FILE="$SCRIPT_DIR/xyc_strings.sh"
@@ -157,6 +159,18 @@ XYC_VIDEO_FREQUENCY="Video Frequency"
 XYC_VIDEO_BITRATE="Video Bitrate"
 XYC_SHADOW="Shadow Adj"
 XYC_SHADOW_PROMPT="Shadow/Highlight/Gamma clipping adjustments (y/n)"
+XYC_SHARPNESS="Sharpness"
+XYC_SHARPNESS_MENU="Sharpness Menu"
+XYC_SHARPNESS_MODE="Sharpness Mode"
+XYC_SHARPNESS_FIR="Digital Filter"
+XYC_SHARPNESS_COR="Coring"
+XYC_RESET_DEFAULT="Reset to Default"
+XYC_SHR_MODE_VIDEO="Video"
+XYC_SHR_MODE_FAST="Fast Still"
+XYC_SHR_MODE_LOWISO="LowISO Still"
+XYC_SHR_MODE_HIGHISO="HighISO Still"
+XYC_SHARPNESS_FIR_PROMPT="Coefficients of Digital Filter"
+XYC_SHARPNESS_COR_PROMPT="Coefficients of Coring (1-255)"
 
 #If language file exists, source it to override English language UI strings
 if [[ -s "$LANGUAGE_FILE" && -r "$LANGUAGE_FILE" ]]; then
@@ -219,7 +233,7 @@ showMainMenu ()
 showSettingsMenu ()
 {
   local REPLY=0
-  while [[ $REPLY -gt -1 && $REPLY -lt 10 ]]
+  while [[ $REPLY -gt -1 && $REPLY -lt 12 ]]
   do
     echo "    == ${XYC_CAMERA_SETTINGS_MENU} =="
     if [ $EXP -eq 0 ]; then 
@@ -248,27 +262,32 @@ showSettingsMenu ()
     else 
       echo " [5] ${XYC_SHADOW}   : ${XYC_NO}" 
     fi
-    if [ $YIMAX == ${XYC_Y} ]; then 
-      echo " [6] ${XYC_YIMAX_MOVIE}  : ${XYC_YES}" 
+    if [[ ! -z $SHR ]]; then 
+      echo " [6] ${XYC_SHARPNESS}    : $SHR $FIR $COR"
     else 
-      echo " [6] ${XYC_YIMAX_MOVIE}  : ${XYC_NO}"
+      echo " [6] ${XYC_SHARPNESS}    : ${XYC_DEFAULT}" 
+    fi
+    if [ $YIMAX == ${XYC_Y} ]; then 
+      echo " [7] ${XYC_YIMAX_MOVIE}  : ${XYC_YES}" 
+    else 
+      echo " [7] ${XYC_YIMAX_MOVIE}  : ${XYC_NO}"
     fi
     if [ $RAW == ${XYC_Y} ]; then 
-      echo " [7] ${XYC_CREATE_RAW}   : ${XYC_YES}" 
+      echo " [8] ${XYC_CREATE_RAW}   : ${XYC_YES}" 
     else 
-      echo " [7] ${XYC_CREATE_RAW}   : ${XYC_NO}"
+      echo " [8] ${XYC_CREATE_RAW}   : ${XYC_NO}"
     fi
     if [ $RES -eq 0 ]; then 
-      echo " [8] ${XYC_VIDEO_QUALITY}: ${XYC_DEFAULT}" 
+      echo " [9] ${XYC_VIDEO_QUALITY}: ${XYC_DEFAULT}" 
     else
-      echo " [8] ${XYC_VIDEO_QUALITY}: $RESVIEW"
+      echo " [9] ${XYC_VIDEO_QUALITY}: $RESVIEW"
     fi
     if [ $INC_USER == ${XYC_Y} ]; then 
-      echo " [9] ${XYC_USER_IMPORT} : ${XYC_YES}" 
+      echo " [10] ${XYC_USER_IMPORT} : ${XYC_YES}" 
     else 
-      echo " [9] ${XYC_USER_IMPORT} : ${XYC_NO}"
+      echo " [10] ${XYC_USER_IMPORT} : ${XYC_NO}"
     fi
-    echo " [10] ${XYC_SAVE_AND_BACK}"
+    echo " [11] ${XYC_SAVE_AND_BACK}"
 
     read -p "${XYC_SELECT_OPTION}: " REPLY
     case $REPLY in
@@ -277,11 +296,12 @@ showSettingsMenu ()
       3) getAWBInput; clear;;
       4) getNRInput; clear;;
       5) getShadowInput; clear;;
-      6) getYiMaxInput; clear;;
-      7) getRawInput; clear;;
-      8) getVideoInput; clear;;
-      9) getIncludeUserSettings; clear;;
-      10) clear; return 0;;
+      6) getSharpnessInput; clear;;
+      7) getYiMaxInput; clear;;
+      8) getRawInput; clear;;
+      9) getVideoInput; clear;;
+      10) getIncludeUserSettings; clear;;
+      11) clear; return 0;;
       *) clear; echo "$XYC_INVALID_CHOICE"; REPLY=0;;
     esac
   done
@@ -317,7 +337,7 @@ showTimeLapseMenu ()
 showHDRMenu ()
 {
   local REPLY=0
-  while [[ $REPLY -gt -1 && $REPLY -lt 4 ]]
+  while [[ $REPLY -gt -1 && $REPLY -lt 6 ]]
   do
     if [[ ! -z $AUTAN ]]; then
       if [ $ISO -eq 0 ]; then 
@@ -484,6 +504,13 @@ parseExistingAutoexec ()
     HDR3=`grep "#HDRParams:" $AASH | cut -d " " -f 5`
   fi
 
+  grep -q "#Sharpness:" $AASH 2>/dev/null
+  if [ $? -eq 0 ]; then
+    SHR=`grep "#Sharpness:" $AASH | cut -d " " -f 2`
+    FIR=`grep "#Sharpness:" $AASH | cut -d " " -f 3`
+    COR=`grep "#Sharpness:" $AASH | cut -d " " -f 4`
+  fi
+
   grep -q "#YiMAX-movie script" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then YIMAX=${XYC_Y}; fi
 
@@ -524,7 +551,7 @@ parseExistingAutoexec ()
 resetCameraSettings ()
 {
   unset RES FPS BIT
-  unset AWB RNR YIMAX SHADOW 
+  unset AWB RNR SHR FIR COR YIMAX SHADOW 
   unset ISO EXP RAW
   unset INC_USER
   setMissingValues
@@ -753,6 +780,55 @@ getRawInput ()
   if [[ "$REPLY" == ${XYC_Y} || "$REPLY" == ${XYC_N} ]]; then RAW=$REPLY; fi
 }
 
+getSharpnessInput ()
+{
+  clear
+  echo " ********** ${XYC_SHARPNESS_MODE} ********* "
+  echo " * (0) ${XYC_DEFAULT}                     * "
+  echo " * (1) ${XYC_SHR_MODE_VIDEO}                       * "
+  echo " * (2) ${XYC_SHR_MODE_FAST}                  * "
+  echo " * (3) ${XYC_SHR_MODE_LOWISO}                * "
+  echo " * (4) ${XYC_SHR_MODE_HIGHISO}               * "
+  echo " *********************************** "
+  local REPLY=$SHR
+  read -p "${XYC_SELECT_OPTION}: " REPLY
+  case $REPLY in 
+    0) unset SHR return;;
+    1) SHR=0;; 
+    2) SHR=1;; 
+    3) SHR=2;; 
+    4) SHR=3;;
+  esac
+  if [[ ! -z $SHR ]]; then 
+    getSharpFirInput
+  fi
+}
+
+getSharpFirInput ()
+{
+  clear  
+  local REPLY=$FIR
+  read -p "${XYC_SHARPNESS_FIR_PROMPT} [${XYC_ENTER}=$FIR]: " REPLY
+  if [ -n "$REPLY" ]; then 
+    FIR=$REPLY; 
+  elif [ -z "$FIR" ]; then
+    FIR=100;
+  fi
+  getSharpCorInput
+}
+
+getSharpCorInput ()
+{
+  clear
+  local REPLY=$COR
+  read -p "${XYC_SHARPNESS_COR_PROMPT} [${XYC_ENTER}=$COR]: " REPLY
+  if [ -n "$REPLY" ]; then 
+    COR=$REPLY;
+  elif [ -z "$COR" ]; then
+    COR=104; 
+  fi
+}
+
 getYiMaxInput ()
 {
   clear 
@@ -963,7 +1039,7 @@ getHDRInput ()
   expView $HDR1
   HDR1VIEW=$EXPVIEW
   local REPLY=0
-  while [[ $REPLY -eq 0 ]]
+  while [ $REPLY -eq 0 ]
   do
     echo " * ${XYC_HDR}1    : $HDR1VIEW        "
     echo ""
@@ -1017,6 +1093,10 @@ removeAutoexec ()
     echo "${XYC_DELETING} $PRAWNCONF" 
     rm -f $PRAWNCONF
   fi
+  if [[ "$CORCONF" && -r "$CORCONF" ]]; then
+    echo "${XYC_DELETING} $CORCONF" 
+    rm -f $CORCONF
+  fi
 }
 
 writeAutoexec ()
@@ -1030,6 +1110,7 @@ writeAutoexec ()
   echo "#VideoResolution: $RES $FPS $BIT" >> $OUTFILE
   echo "#CameraParams: $AWB $RNR $YIMAX $SHADOW" >> $OUTFILE
   echo "#PhotoParams: $ISO $EXP $RAW" >> $OUTFILE
+  echo "#Sharpness: $SHR $FIR $COR " >> $OUTFILE  
   echo "#UserSettings: $INC_USER" >> $OUTFILE
   echo "#TimeLapseParams: $TLNUM $TLONCE $TLOFF $TLDELAY" >> $OUTFILE
   echo "#HDRParams: $AUTAN $HDR1 $HDR2 $HDR3" >> $OUTFILE
@@ -1086,6 +1167,18 @@ writeAutoexec ()
     echo "#Reduce noise reduction as much as possible" >> $OUTFILE
     echo "t ia2 -adj tidx -1 -1 -1" >> $OUTFILE
     echo "" >> $OUTFILE
+  fi
+
+  if [[ ! -z $SHR ]]; then
+    echo "#Sharpness" >> $OUTFILE
+    echo "t is2 -shp mode $SHR" >> $OUTFILE
+    echo "t is2 -shp fir $FIR 0 0 0 0 0 0" >> $OUTFILE
+    echo "t is2 -shp max_change 5 5" >> $OUTFILE
+    echo "t is2 -shp cor d:\coring.config" >> $OUTFILE
+    echo "" >> $OUTFILE
+
+    echo "Writing $CORCONF"
+    echo "$COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR" > $CORCONF
   fi
 
   if [ $RES -eq 1 ]; then
@@ -1328,12 +1421,14 @@ writeAutoexec ()
     echo "chroma_median_filter.cr_strength 128" >> $PRAWNCONF
     echo "demosaic.activity_thresh 3" >> $PRAWNCONF
     echo "demosaic.grad_noise_thresh 32" >> $PRAWNCONF
-    echo "sharpening_fir.fir_strength 64" >> $PRAWNCONF
-    echo "sharpening_coring.coring_table 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14" >> $PRAWNCONF
+    if [[ -z $SHR ]]; then
+        echo "sharpening_fir.fir_strength 64" >> $PRAWNCONF
+        echo "sharpening_coring.coring_table 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14" >> $PRAWNCONF
+        echo "directional_sharpening.enable 0" >> $PRAWNCONF
+    fi
     echo "spatial_filter.mode 0" >> $PRAWNCONF
     echo "video_mctf.enable 1" >> $PRAWNCONF
     echo "chromatic_aberration_correction.enable 1" >> $PRAWNCONF
-    echo "directional_sharpening.enable 0" >> $PRAWNCONF
     echo "chroma_filt.enable 0" >> $PRAWNCONF
   fi
   
