@@ -517,25 +517,25 @@ parseExistingAutoexec ()
   grep -q "t ia2 -adj autoknee" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then SHADOW=${XYC_Y}; fi
 
-  grep -q "writeb 0xC06CE446 0x11" $AASH 2>/dev/null
+  grep -q "writeb 0xC06CC426 0x11" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=1; FPS=1; fi
-  grep -q "writeb 0xC06CE446 0x0F" $AASH 2>/dev/null
+  grep -q "writeb 0xC06CC426 0x0F" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=1; FPS=2; fi
-  grep -q "writeb 0xC06CE446 0x34" $AASH 2>/dev/null
+  grep -q "writeb 0xC06CC426 0x34" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=1; FPS=3; fi
-  grep -q "writeb 0xC06CE446 0x17" $AASH 2>/dev/null
+  grep -q "writeb 0xC06CC426 0x17" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=2; FPS=1; fi
-  grep -q "writeb 0xC06CE446 0x16" $AASH 2>/dev/null
+  grep -q "writeb 0xC06CC426 0x16" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=2; FPS=2; fi
-  grep -q "writeb 0xC06CE446 0x0D" $AASH 2>/dev/null
+  grep -q "writeb 0xC06CC426 0x0D" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=3; FPS=1; fi
-  grep -q "writeb 0xC06CE446 0x0C" $AASH 2>/dev/null
+  grep -q "writeb 0xC06CC426 0x0C" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=3; FPS=2; fi
-  grep -q "writeb 0xC06CE446 0x06" $AASH 2>/dev/null
+  grep -q "writeb 0xC06CC426 0x06" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=4; FPS=1; fi
-  grep -q "writeb 0xC06CE446 0x03" $AASH 2>/dev/null
+  grep -q "writeb 0xC06CC426 0x03" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=4; FPS=2; fi
-  grep -q "writeb 0xC06CE446 0x02" $AASH 2>/dev/null
+  grep -q "writeb 0xC06CC426 0x02" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=5; FPS=1; fi
 
   grep -q "0x41A0" $AASH 2>/dev/null
@@ -1185,7 +1185,7 @@ writeAutoexec ()
     echo "#set video resolution to 1280x720" >> $OUTFILE
     if [ $FPS -eq 1 ]; then #1280x720 30fps
       echo "#set video frequency to 30fps" >> $OUTFILE
-      echo "writeb 0xC06CE446 0x11" >> $OUTFILE
+      echo "writeb 0xC06CC426 0x11" >> $OUTFILE
       if [ $BIT -eq 1 ]; then
         echo "#set bitrate to 20Mb/s" >> $OUTFILE
         echo "writew 0xC05C2152 0x41A0" >> $OUTFILE
@@ -1204,7 +1204,7 @@ writeAutoexec ()
       fi
     elif [ $FPS -eq 2 ]; then #1280x720 60fps
       echo "#set video frequency to 60fps" >> $OUTFILE
-      echo "writeb 0xC06CE446 0x0F" >> $OUTFILE
+      echo "writeb 0xC06CC426 0x0F" >> $OUTFILE
       if [ $BIT -eq 1 ]; then
         echo "#set bitrate to 20Mb/s" >> $OUTFILE
         echo "writew 0xC05C2122 0x41A0" >> $OUTFILE
@@ -1223,7 +1223,7 @@ writeAutoexec ()
       fi
     elif [ $FPS -eq 3 ]; then #1280x720 120fps
       echo "#set video frequency to 120fps" >> $OUTFILE
-      echo "writeb 0xC06CE446 0x34" >> $OUTFILE
+      echo "writeb 0xC06CC426 0x34" >> $OUTFILE
       if [ $BIT -eq 1 ]; then
         echo "#set bitrate to 20Mb/s" >> $OUTFILE
         echo "writew 0xC05C2812 0x41A0" >> $OUTFILE
@@ -1246,7 +1246,7 @@ writeAutoexec ()
     echo "#set video resolution to 1280x960" >> $OUTFILE
     if [ $FPS -eq 1 ]; then #1280x960 30fps
       echo "#set video frequency to 30fps" >> $OUTFILE
-      echo "writeb 0xC06CE446 0x17" >> $OUTFILE
+      echo "writeb 0xC06CC426 0x17" >> $OUTFILE
       if [ $BIT -eq 1 ]; then
         echo "#set bitrate to 20Mb/s" >> $OUTFILE
         echo "writew 0xC05C22A2 0x41A0" >> $OUTFILE
@@ -1265,7 +1265,7 @@ writeAutoexec ()
       fi
     elif [ $FPS -eq 2 ]; then #1280x960 60fps
       echo "#set video frequency to 60fps" >> $OUTFILE
-      echo "writeb 0xC06CE446 0x16" >> $OUTFILE
+      echo "writeb 0xC06CC426 0x16" >> $OUTFILE
       if [ $BIT -eq 1 ]; then
         echo "#set bitrate to 20Mb/s" >> $OUTFILE
         echo "writew 0xC05C2272 0x41A0" >> $OUTFILE
@@ -1288,7 +1288,7 @@ writeAutoexec ()
     echo "#set video resolution to 1600x1200" >> $OUTFILE
     if [ $FPS -eq 1 ]; then #1600x1200 30fps
       echo "#set video frequency to 30fps" >> $OUTFILE
-      echo "writeb 0xC06CE446 0x0D" >> $OUTFILE
+      echo "writeb 0xC06CC426 0x0D" >> $OUTFILE
       if [ $BIT -eq 1 ]; then
         echo "#set bitrate to 20Mb/s" >> $OUTFILE
         echo "writew 0xC05C20C2 0x41A0" >> $OUTFILE
@@ -1307,7 +1307,7 @@ writeAutoexec ()
       fi
     elif [ $FPS -eq 2 ]; then #1600x1200 60fps
       echo "#set video frequency to 60fps" >> $OUTFILE
-      echo "writeb 0xC06CE446 0x0C" >> $OUTFILE
+      echo "writeb 0xC06CC426 0x0C" >> $OUTFILE
       if [ $BIT -eq 1 ]; then
         echo "#set bitrate to 20Mb/s" >> $OUTFILE
         echo "writew 0xC05C2092 0x41A0" >> $OUTFILE
@@ -1330,7 +1330,7 @@ writeAutoexec ()
     echo "#set video resolution to 1920x1080" >> $OUTFILE
     if [ $FPS -eq 1 ]; then #1920x1080 30fps
       echo "#set video frequency to 30fps" >> $OUTFILE
-      echo "writeb 0xC06CE446 0x06" >> $OUTFILE
+      echo "writeb 0xC06CC426 0x06" >> $OUTFILE
       if [ $BIT -eq 1 ]; then
         echo "#set bitrate to 20Mb/s" >> $OUTFILE
         echo "writew 0xC05C1F72 0x41A0" >> $OUTFILE
@@ -1349,7 +1349,7 @@ writeAutoexec ()
       fi
     elif [ $FPS -eq 2 ]; then #1920x1080 60fps
       echo "#set video frequency to 60fps" >> $OUTFILE
-      echo "writeb 0xC06CE446 0x03" >> $OUTFILE
+      echo "writeb 0xC06CC426 0x03" >> $OUTFILE
       if [ $BIT -eq 1 ]; then
         echo "#set bitrate to 20Mb/s" >> $OUTFILE
         echo "writew 0xC05C1EE2 0x41A0" >> $OUTFILE
@@ -1372,7 +1372,7 @@ writeAutoexec ()
     echo "#set video resolution to 2304x1296" >> $OUTFILE
     if [ $FPS -eq 1 ]; then #2304x1296 30fps
       echo "#set video frequency to 30fps" >> $OUTFILE
-      echo "writeb 0xC06CE446 0x02" >> $OUTFILE
+      echo "writeb 0xC06CC426 0x02" >> $OUTFILE
       if [ $BIT -eq 1 ]; then
         echo "#set bitrate to 20Mb/s" >> $OUTFILE
         echo "writew 0xC05C1EB2 0x41A0" >> $OUTFILE
