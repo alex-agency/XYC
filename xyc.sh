@@ -569,7 +569,7 @@ setMissingValues ()
   if [[ "${INC_USER}" != ${XYC_Y} && "${INC_USER}" != ${XYC_N} ]]; then INC_USER=${XYC_N}; fi
   if [[ "$YIMAX" != ${XYC_Y} && "$YIMAX" != ${XYC_N} ]]; then YIMAX=${XYC_N}; fi
   if [[ "$SHADOW" != ${XYC_Y} && "$SHADOW" != ${XYC_N} ]]; then SHADOW=${XYC_N}; fi
-  if [ -z "$RES" ]; then RES=0; FPS=2; BIT=2; else setRESView; fi
+  if [ -z "$RES" ]; then RES=0; FPS=1; BIT=2; else setRESView; fi
 }
 
 resetDelaySuggestion ()
@@ -883,7 +883,7 @@ getVideoFrequencyInput ()
     3)  if [ $RES -eq 1 ]; then 
           FPS=3 
         else 
-          FPS=2 
+          FPS=1 
         fi;;
   esac
   getVideoBitrateInput
@@ -895,30 +895,14 @@ getVideoBitrateInput ()
   echo " ********** ${XYC_VIDEO_BITRATE} ********** "
   echo " * (1) 20 Mb/s                     * "
   echo " * (2) 25 Mb/s                     * "
-  if [ $RES -ne 5 ]; then 
-    echo " * (3) 30 Mb/s                     * "
-    echo " * (4) 35 Mb/s                     * "
-  fi
+  echo " * (3) 30 Mb/s                     * "
+  echo " * (4) 35 Mb/s                     * "
   echo " *********************************** "
   local REPLY
   read -p "${XYC_SELECT_OPTION}: " REPLY
-  if [ -ne $REPLY ]; then
-    REPLY=$BIT
+  if [ -n "$REPLY" ]; then 
+    BIT=$REPLY; 
   fi
-  case $REPLY in 
-    1) BIT=1;;
-    2) BIT=2;;
-    3)  if [ $RES -ne 5 ]; then 
-          BIT=3 
-        else 
-          BIT=2 
-        fi;;
-    4)  if [ $RES -ne 5 ]; then 
-          BIT=4 
-        else 
-          BIT=2 
-        fi;;
-  esac
   setRESView
 }
 
@@ -1380,6 +1364,14 @@ writeAutoexec ()
       if [ $BIT -eq 2 ]; then
         echo "#set bitrate to 25Mb/s" >> $OUTFILE
         echo "writew 0xC05C1EB2 0x41C8" >> $OUTFILE
+      fi
+      if [ $BIT -eq 3 ]; then
+        echo "#set bitrate to 30Mb/s" >> $OUTFILE
+        echo "writew 0xC05C1EB2 0x41F0" >> $OUTFILE
+      fi
+      if [ $BIT -eq 4 ]; then
+        echo "#set bitrate to 35Mb/s" >> $OUTFILE
+        echo "writew 0xC05C1EB2 0x420C" >> $OUTFILE
       fi
     fi
     echo "" >> $OUTFILE
