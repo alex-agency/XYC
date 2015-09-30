@@ -51,7 +51,7 @@
 
 VERS="0.3.3 Alex"
 FUSED=/tmp/fuse_d
-FUSED=`pwd`
+#FUSED=`pwd`
 AASH=${FUSED}/autoexec.ash
 PRAWNCONF=${FUSED}/goprawn.config
 CORCONF=${FUSED}/coring.config
