@@ -36,6 +36,10 @@ Usage:
 
 Changelog:
 
+0.3.3 (Oct 2015) by Alex
+- Added support for 2560x1440 30fps
+- Added support file weight limit to 4GB
+
 0.3.2 (Sep 2015) by Alex 
 - Updated YiMax script
 - Added shadow/highlight/gamma script
