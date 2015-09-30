@@ -36,6 +36,12 @@ Usage:
 
 Changelog:
 
+0.3.2 (Sep 2015) by Alex 
+- Updated YiMax script
+- Added shadow/highlight/gamma script
+- Added sharpness script
+- Fixed HDR scripts and added HDR Night
+
 0.3.1 (Sep 2015) by Alex 
 - Ported features from XYC v4.6 https://rendy37.wordpress.com/2015/08/13/xiaomi-yi-configurator-xyc-ubah-script-tanpa-pc/
 - Added YiMax Movie script http://nutseynuts.blogspot.com/2015/06/xiaomi-yi-action-cam-custom-scripts.html
