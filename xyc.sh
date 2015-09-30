@@ -31,8 +31,9 @@
 #
 # Changelog:
 #
-# 0.3.3 (Oct 2015) - Added support for 2560x1440 30fps
+# 0.3.3 (Oct 2015) - Support latest 1.2.13 firmware
 # by Alex          - Added support file weight limit to 4GB
+#                  - Added 1440p resolution for test purpose
 # 0.3.2 (Sep 2015) - Updated YiMax script
 # by Alex          - Added shadow/highlight/gamma script
 #                  - Added sharpness script
@@ -174,7 +175,8 @@ XYC_SHR_MODE_HIGHISO="HighISO Still"
 XYC_SHARPNESS_FIR_PROMPT="Coefficients of Digital Filter"
 XYC_SHARPNESS_COR_PROMPT="Coefficients of Coring (1-255)"
 XYC_BIG_FILE="4Gb files"
-XYC_BIG_FILE_PROMPT="Expand file weight limit to 4GB (y/n)"
+XYC_BIG_FILE_PROMPT="Set file weight limit to 4GB (y/n)"
+XYC_RESOLUTION_WARNING="Warning Resolution"
 
 #If language file exists, source it to override English language UI strings
 if [[ -s "$LANGUAGE_FILE" && -r "$LANGUAGE_FILE" ]]; then
@@ -923,6 +925,9 @@ getVideoBitrateInput ()
     BIT=$REPLY; 
   fi
   setRESView
+  if [ $RES -eq 6 ]; then
+    showResolutionWarning
+  fi
 }
 
 setRESView ()
@@ -977,6 +982,19 @@ setRESView ()
       4) RESVIEW="$RESVIEW 35Mb";;
     esac
   fi
+}
+
+showResolutionWarning ()
+{
+  clear  
+  echo " ******* ${XYC_RESOLUTION_WARNING} ******** "
+  echo " In case of not supported resolution "
+  echo " or bitrate the camera could freeze "
+  echo " or have continuous restart. "
+  echo " If you have this issue delete "
+  echo " autoexec.ash directly from SD card. "
+  echo ""
+  read -p " Press ${XYC_ENTER} to continue:" REPLY
 }
 
 getBigFileInput ()
