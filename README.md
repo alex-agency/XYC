@@ -9,8 +9,10 @@ exposure, ISO, whitebalance, etc.  In addition, a photographic time-lapse
 feature is also available.  It is designed to be executed and accessed via
 a telnet client running on any phone, computer, tablet, etc.
 
-<img width="309" alt="1" src="https://cloud.githubusercontent.com/assets/1122708/9668357/baf4a22c-5289-11e5-81e6-ce1c12cee2cf.png">  <img width="309" alt="2" src="https://cloud.githubusercontent.com/assets/1122708/9668358/baf52a76-5289-11e5-8e9e-92db6999715f.png">  <img width="309" alt="3" src="https://cloud.githubusercontent.com/assets/1122708/9668359/baf7d5f0-5289-11e5-9cab-e8c1582f3c3f.png">
-<img width="309" alt="4" src="https://cloud.githubusercontent.com/assets/1122708/9668361/bafa6194-5289-11e5-80a0-e18d2656d566.png">  <img width="309" alt="5" src="https://cloud.githubusercontent.com/assets/1122708/9668360/baf8305e-5289-11e5-9365-f9d4bac8e38a.png">  <img width="309" alt="6" src="https://cloud.githubusercontent.com/assets/1122708/9668362/bb0edd0e-5289-11e5-8a67-0e4f50d48458.png">
+<img width="309" src="https://cloud.githubusercontent.com/assets/1122708/10204186/020da82c-67c3-11e5-876b-1d81f47e87e6.jpg">  <img width="309" src="https://cloud.githubusercontent.com/assets/1122708/10204185/020c3884-67c3-11e5-9831-5f00f2c42b93.jpg">
+<img width="309" src="https://cloud.githubusercontent.com/assets/1122708/10204182/02079c8e-67c3-11e5-9f9a-156afc9452e8.jpg">  <img width="309" src="https://cloud.githubusercontent.com/assets/1122708/10204183/020a636a-67c3-11e5-9b5a-179ce842a2c7.jpg">
+<img width="309" src="https://cloud.githubusercontent.com/assets/1122708/10204184/020af41a-67c3-11e5-9ba0-412c8df99d72.jpg">  <img width="309" src="https://cloud.githubusercontent.com/assets/1122708/10204187/020ee1b0-67c3-11e5-8c1b-0e2466283d5e.jpg">
+<img width="309" src="https://cloud.githubusercontent.com/assets/1122708/10204188/021f9186-67c3-11e5-9a5f-6c476ed3d81f.jpg">  <img width="309" src="https://cloud.githubusercontent.com/assets/1122708/10204189/02257092-67c3-11e5-824f-1a8ab38489ef.jpg">
 
 
 
@@ -37,8 +39,9 @@ Usage:
 Changelog:
 
 0.3.3 (Oct 2015) by Alex
-- Added support for 2560x1440 30fps
+- Support latest 1.2.13 firmware
 - Added support file weight limit to 4GB
+- Added 1440p resolution for testing purpose
 
 0.3.2 (Sep 2015) by Alex 
 - Updated YiMax script
