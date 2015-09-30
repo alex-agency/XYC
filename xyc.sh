@@ -31,6 +31,8 @@
 #
 # Changelog:
 #
+# 0.3.3 (Oct 2015) - Added support for 2560x1440 30fps
+# by Alex          - Added support file weight limit to 4GB
 # 0.3.2 (Sep 2015) - Updated YiMax script
 # by Alex          - Added shadow/highlight/gamma script
 #                  - Added sharpness script
@@ -47,9 +49,9 @@
 # undocumented features of the Xiaomi Yi. Using this software may void your
 # camera's warranty and possibly damage your camera.  Use at your own risk!
 
-VERS="0.3.2 Alex"
+VERS="0.3.3 Alex"
 FUSED=/tmp/fuse_d
-#FUSED=`pwd`
+FUSED=`pwd`
 AASH=${FUSED}/autoexec.ash
 PRAWNCONF=${FUSED}/goprawn.config
 CORCONF=${FUSED}/coring.config
@@ -171,6 +173,8 @@ XYC_SHR_MODE_LOWISO="LowISO Still"
 XYC_SHR_MODE_HIGHISO="HighISO Still"
 XYC_SHARPNESS_FIR_PROMPT="Coefficients of Digital Filter"
 XYC_SHARPNESS_COR_PROMPT="Coefficients of Coring (1-255)"
+XYC_BIG_FILE="4Gb files"
+XYC_BIG_FILE_PROMPT="Expand file weight limit to 4GB (y/n)"
 
 #If language file exists, source it to override English language UI strings
 if [[ -s "$LANGUAGE_FILE" && -r "$LANGUAGE_FILE" ]]; then
@@ -194,7 +198,7 @@ welcome ()
   clear
   echo ""
   echo " *  Xiaomi Yi Configurator  * "
-  echo " *  9/8/2015    ${VERS}  * "
+  echo " *  10/1/2015   ${VERS}  * "
   echo ""
 }
 
@@ -233,7 +237,7 @@ showMainMenu ()
 showSettingsMenu ()
 {
   local REPLY=0
-  while [[ $REPLY -gt -1 && $REPLY -lt 12 ]]
+  while [[ $REPLY -gt -1 && $REPLY -lt 13 ]]
   do
     echo "    == ${XYC_CAMERA_SETTINGS_MENU} =="
     if [ $EXP -eq 0 ]; then 
@@ -282,12 +286,17 @@ showSettingsMenu ()
     else
       echo " [9] ${XYC_VIDEO_QUALITY}: $RESVIEW"
     fi
-    if [ $INC_USER == ${XYC_Y} ]; then 
-      echo " [10] ${XYC_USER_IMPORT} : ${XYC_YES}" 
-    else 
-      echo " [10] ${XYC_USER_IMPORT} : ${XYC_NO}"
+    if [ $BIG_FILE == ${XYC_Y} ]; then 
+      echo " [10] ${XYC_BIG_FILE}   : ${XYC_YES}" 
+    else
+      echo " [10] ${XYC_BIG_FILE}   : ${XYC_NO}"
     fi
-    echo " [11] ${XYC_SAVE_AND_BACK}"
+    if [ $INC_USER == ${XYC_Y} ]; then 
+      echo " [11] ${XYC_USER_IMPORT} : ${XYC_YES}" 
+    else 
+      echo " [11] ${XYC_USER_IMPORT} : ${XYC_NO}"
+    fi
+    echo " [12] ${XYC_SAVE_AND_BACK}"
 
     read -p "${XYC_SELECT_OPTION}: " REPLY
     case $REPLY in
@@ -300,8 +309,9 @@ showSettingsMenu ()
       7) getYiMaxInput; clear;;
       8) getRawInput; clear;;
       9) getVideoInput; clear;;
-      10) getIncludeUserSettings; clear;;
-      11) clear; return 0;;
+      10) getBigFileInput; clear;;
+      11) getIncludeUserSettings; clear;;
+      12) clear; return 0;;
       *) clear; echo "$XYC_INVALID_CHOICE"; REPLY=0;;
     esac
   done
@@ -462,6 +472,7 @@ parseCommandLine ()
       -r) RAW=$2; shift;;
       -y) YIMAX=$2; shift;;
       -s) SHADOW=$2; shift;;
+      -b) BIG_FILE=$2; shift;;
       -u) INC_USER=$2; shift;;
       -q) NOUI=1;;
        *) echo "${XYC_UNKNOWN_OPTION}: $key"; shift;;
@@ -537,6 +548,8 @@ parseExistingAutoexec ()
   if [ $? -eq 0 ]; then RES=4; FPS=2; fi
   grep -q "writeb 0xC06CC426 0x02" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=5; FPS=1; fi
+  grep -q "writeb 0xC06CC426 0x00" $AASH 2>/dev/null
+  if [ $? -eq 0 ]; then RES=6; FPS=1; fi
 
   grep -q "0x41A0" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then BIT=1; fi
@@ -546,12 +559,15 @@ parseExistingAutoexec ()
   if [ $? -eq 0 ]; then BIT=3; fi
   grep -q "0x420C" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then BIT=4; fi
+
+  grep -q "writew 0xC03A8520 0x2004" $AASH 2>/dev/null
+  if [ $? -eq 0 ]; then BIG_FILE=${XYC_Y}; fi
 }
 
 resetCameraSettings ()
 {
   unset RES FPS BIT
-  unset AWB RNR SHR FIR COR YIMAX SHADOW 
+  unset AWB RNR SHR FIR COR YIMAX SHADOW BIG_FILE
   unset ISO EXP RAW
   unset INC_USER
   setMissingValues
@@ -566,6 +582,7 @@ setMissingValues ()
   if [[ "$AWB" != ${XYC_Y} && "$AWB" != ${XYC_N} ]]; then AWB=${XYC_Y}; fi
   if [[ "$RNR" != ${XYC_Y} && "$RNR" != ${XYC_N} ]]; then RNR=${XYC_N}; fi
   if [[ "$RAW" != ${XYC_Y} && "$RAW" != ${XYC_N} ]]; then RAW=${XYC_N}; fi
+  if [[ "$BIG_FILE" != ${XYC_Y} && "$BIG_FILE" != ${XYC_N} ]]; then BIG_FILE=${XYC_N}; fi
   if [[ "${INC_USER}" != ${XYC_Y} && "${INC_USER}" != ${XYC_N} ]]; then INC_USER=${XYC_N}; fi
   if [[ "$YIMAX" != ${XYC_Y} && "$YIMAX" != ${XYC_N} ]]; then YIMAX=${XYC_N}; fi
   if [[ "$SHADOW" != ${XYC_Y} && "$SHADOW" != ${XYC_N} ]]; then SHADOW=${XYC_N}; fi
@@ -841,9 +858,10 @@ getVideoInput ()
 {
   clear
   echo " ********* ${XYC_VIDEO_RESOLUTION} ******** "
-  echo " * (0) ${XYC_DEFAULT}   (3) 1600x1200     * "
-  echo " * (1) 1280x720  (4) 1920x1080     * "
-  echo " * (2) 1280x960  (5) 2304x1296     * "
+  echo " * (0) ${XYC_DEFAULT}   (4) 1920x1080     * "
+  echo " * (1) 1280x720  (5) 2304x1296     * "
+  echo " * (2) 1280x960  (6) 2560x1440     * "
+  echo " * (3) 1600x1200                   * "  
   echo " *********************************** "
   local REPLY=$RES
   read -p "${XYC_SELECT_OPTION}: " REPLY
@@ -854,8 +872,9 @@ getVideoInput ()
     3) RES=3;;
     4) RES=4;;
     5) RES=5;;
+    6) RES=6;;
   esac
-  if [ $RES -eq 5 ]; then
+  if [[ $RES -eq 5 || $RES -eq 6 ]]; then
     FPS=1; getVideoBitrateInput
   else
     getVideoFrequencyInput
@@ -943,6 +962,11 @@ setRESView ()
     if [ $FPS -eq 1 ]; then 
       RESVIEW="$RESVIEW@30"
     fi
+  elif [ $RES -eq 6 ]; then 
+    RESVIEW="1440p"
+    if [ $FPS -eq 1 ]; then 
+      RESVIEW="$RESVIEW@30"
+    fi
   fi
 
   if [ $RES -ne 0 ]; then
@@ -953,6 +977,14 @@ setRESView ()
       4) RESVIEW="$RESVIEW 35Mb";;
     esac
   fi
+}
+
+getBigFileInput ()
+{
+  clear 
+  local REPLY=$BIG_FILE
+  read -p "${XYC_BIG_FILE_PROMPT} [${XYC_ENTER}=$BIG_FILE]: " REPLY
+  if [[ "$REPLY" == ${XYC_Y} || "$REPLY" == ${XYC_N} ]]; then BIG_FILE=$REPLY; fi
 }
 
 getIncludeUserSettings ()
@@ -1092,7 +1124,7 @@ writeAutoexec ()
   #Write any necessary script commands to autoexec.ash
   echo "#Script created `date`" > $OUTFILE
   echo "#VideoResolution: $RES $FPS $BIT" >> $OUTFILE
-  echo "#CameraParams: $AWB $RNR $YIMAX $SHADOW" >> $OUTFILE
+  echo "#CameraParams: $AWB $RNR $YIMAX $SHADOW $BIG_FILE" >> $OUTFILE
   echo "#PhotoParams: $ISO $EXP $RAW" >> $OUTFILE
   echo "#Sharpness: $SHR $FIR $COR " >> $OUTFILE  
   echo "#UserSettings: $INC_USER" >> $OUTFILE
@@ -1375,11 +1407,40 @@ writeAutoexec ()
       fi
     fi
     echo "" >> $OUTFILE
+  elif [ $RES -eq 6 ]; then
+    echo "#set video resolution to 2560x1440" >> $OUTFILE
+    if [ $FPS -eq 1 ]; then #2560x1440 30fps
+      echo "#set video frequency to 30fps" >> $OUTFILE
+      echo "writeb 0xC06CC426 0x00" >> $OUTFILE
+      if [ $BIT -eq 1 ]; then
+        echo "#set bitrate to 20Mb/s" >> $OUTFILE
+        echo "writew 0xC05C1E52 0x41A0" >> $OUTFILE
+      fi
+      if [ $BIT -eq 2 ]; then
+        echo "#set bitrate to 25Mb/s" >> $OUTFILE
+        echo "writew 0xC05C1E52 0x41C8" >> $OUTFILE
+      fi
+      if [ $BIT -eq 3 ]; then
+        echo "#set bitrate to 30Mb/s" >> $OUTFILE
+        echo "writew 0xC05C1E52 0x41F0" >> $OUTFILE
+      fi
+      if [ $BIT -eq 4 ]; then
+        echo "#set bitrate to 35Mb/s" >> $OUTFILE
+        echo "writew 0xC05C1E52 0x420C" >> $OUTFILE
+      fi
+    fi
+    echo "" >> $OUTFILE
   fi
 
   if [ "$RAW" == ${XYC_Y} ]; then
     echo "#Create RAW files" >> $OUTFILE
     echo "t app test debug_dump 14" >> $OUTFILE
+    echo "" >> $OUTFILE
+  fi
+
+  if [ "$BIG_FILE" == ${XYC_Y} ]; then
+    echo "#Set file weight limit to 4GB" >> $OUTFILE
+    echo "writew 0xC03A8520 0x2004" >> $OUTFILE
     echo "" >> $OUTFILE
   fi
 
