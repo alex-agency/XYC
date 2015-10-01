@@ -34,6 +34,7 @@
 # 0.3.3 (Oct 2015) - Support latest 1.2.13 firmware
 # by Alex          - Added support file weight limit to 4GB
 #                  - Added 1440p resolution for test purpose
+#                  - Added ability managing Noise Reduction
 # 0.3.2 (Sep 2015) - Updated YiMax script
 # by Alex          - Added shadow/highlight/gamma script
 #                  - Added sharpness script
@@ -100,7 +101,7 @@ XYC_EXP="Exp"
 XYC_AWB="AWB"
 XYC_CREATE_RAW="Create RAW"
 XYC_RAW="RAW"
-XYC_REDUCE_NR="Reduce NR"
+XYC_NR="NR"
 XYC_IMPORT_USER_SETTINGS="Import additional settings from"
 XYC_YES="Yes"
 XYC_NO="No"
@@ -113,7 +114,6 @@ XYC_AUTO="Auto"
 XYC_ENTER="Enter"
 XYC_CHOOSE="Choose"
 XYC_ENTER_AWB_PROMPT="Auto-Whitebalance (y/n)"
-XYC_REDUCE_NR_PROMPT="Reduce noise-reduction (y/n)"
 XYC_CREATE_RAW_PROMPT="Create RAW files (y/n)"
 XYC_ENTER_NUM_SHOTS_MENU="Number of images (0=off)"
 XYC_ENTER_NUM_SHOTS_PROMPT="Enter number of images (0=off, 1-9999)"
@@ -177,6 +177,13 @@ XYC_SHARPNESS_COR_PROMPT="Coefficients of Coring (1-255)"
 XYC_BIG_FILE="4Gb files"
 XYC_BIG_FILE_PROMPT="Set file weight limit to 4GB (y/n)"
 XYC_RESOLUTION_WARNING="Warning Resolution"
+XYC_NR_MENU="Noise Reduction Menu"
+XYC_DISABLE_NR="Disable NR"
+XYC_MAX_NR="Max NR"
+XYC_CUSTOM_NR="Custom NR"
+XYC_CUSTOM_NR_PROMPT="Enter Noise Reduction (0-16383)"
+XYC_MAX="Max"
+XYC_DISABLE="Disable"
 
 #If language file exists, source it to override English language UI strings
 if [[ -s "$LANGUAGE_FILE" && -r "$LANGUAGE_FILE" ]]; then
@@ -258,10 +265,14 @@ showSettingsMenu ()
     else 
       echo " [3] ${XYC_AWB}          : ${XYC_OFF}"
     fi
-    if [ $RNR == ${XYC_Y} ]; then 
-      echo " [4] ${XYC_REDUCE_NR}    : ${XYC_YES}"
-    else 
-      echo " [4] ${XYC_REDUCE_NR}    : ${XYC_NO}" 
+    if [[ -z $NR ]]; then
+      echo " [4] ${XYC_NR}           : ${XYC_DEFAULT}"
+    elif [ $NR -eq -1 ]; then 
+      echo " [4] ${XYC_NR}           : ${XYC_DISABLE}"
+    elif [ $NR -eq 16383 ]; then 
+      echo " [4] ${XYC_NR}           : ${XYC_MAX}"
+    else
+      echo " [4] ${XYC_NR}           : $NR" 
     fi
     if [ $SHADOW == ${XYC_Y} ]; then 
       echo " [5] ${XYC_SHADOW}   : ${XYC_YES}"
@@ -470,7 +481,7 @@ parseCommandLine ()
       -i) ISO=$2; shift;;
       -e) EXP=$2; shift;;
       -w) AWB=$2; shift;;
-      -n) RNR=$2; shift;;
+      -n) NR=$2; shift;;
       -r) RAW=$2; shift;;
       -y) YIMAX=$2; shift;;
       -s) SHADOW=$2; shift;;
@@ -492,8 +503,7 @@ parseExistingAutoexec ()
   grep -q "t ia2 -awb off" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then AWB=${XYC_N}; fi
 
-  grep -q "t ia2 -adj tidx -1 -1 -1" $AASH 2>/dev/null
-  if [ $? -eq 0 ]; then RNR=${XYC_Y}; fi
+  NR=`grep "t ia2 -adj tidx" $AASH 2>/dev/null | cut -d " " -f 6`
 
   grep -q "t app test debug_dump 14" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RAW=${XYC_Y}; fi
@@ -569,7 +579,7 @@ parseExistingAutoexec ()
 resetCameraSettings ()
 {
   unset RES FPS BIT
-  unset AWB RNR SHR FIR COR YIMAX SHADOW BIG_FILE
+  unset AWB NR SHR FIR COR YIMAX SHADOW BIG_FILE
   unset ISO EXP RAW
   unset INC_USER
   setMissingValues
@@ -582,7 +592,6 @@ setMissingValues ()
   if [ -z "$ISO" ]; then ISO=0; fi
   if [ -z "$EXP" ]; then EXP=0; fi
   if [[ "$AWB" != ${XYC_Y} && "$AWB" != ${XYC_N} ]]; then AWB=${XYC_Y}; fi
-  if [[ "$RNR" != ${XYC_Y} && "$RNR" != ${XYC_N} ]]; then RNR=${XYC_N}; fi
   if [[ "$RAW" != ${XYC_Y} && "$RAW" != ${XYC_N} ]]; then RAW=${XYC_N}; fi
   if [[ "$BIG_FILE" != ${XYC_Y} && "$BIG_FILE" != ${XYC_N} ]]; then BIG_FILE=${XYC_N}; fi
   if [[ "${INC_USER}" != ${XYC_Y} && "${INC_USER}" != ${XYC_N} ]]; then INC_USER=${XYC_N}; fi
@@ -777,10 +786,33 @@ getAWBInput ()
 
 getNRInput ()
 {
+  clear
+  echo " ******* ${XYC_NR_MENU} ****** "
+  echo " * (0) ${XYC_DEFAULT}                     * "
+  echo " * (1) ${XYC_DISABLE_NR}                  * "
+  echo " * (2) NR 500                      * "
+  echo " * (3) NR 2048                     * "
+  echo " * (4) ${XYC_MAX_NR}                      * "
+  echo " * (5) ${XYC_CUSTOM_NR}                   * "  
+  echo " *********************************** "
+  local REPLY
+  read -p "${XYC_SELECT_OPTION}: " REPLY
+  case $REPLY in 
+    0) unset NR;;
+    1) NR=-1;; 
+    2) NR=500;; 
+    3) NR=2048;; 
+    4) NR=16383;;
+    *) getCustomNRInput;;
+  esac
+}
+
+getCustomNRInput ()
+{
   clear 
-  local REPLY=$RNR
-  read -p "${XYC_REDUCE_NR_PROMPT} [${XYC_ENTER}=$RNR]: " REPLY
-  if [[ "$REPLY" == ${XYC_Y} || "$REPLY" == ${XYC_N} ]]; then RNR=$REPLY; fi
+  local REPLY=$NR
+  read -p "${XYC_CUSTOM_NR_PROMPT} [${XYC_ENTER}=$NR]: " REPLY
+  if [ $REPLY -le 16383 -a $REPLY -ge 0 ]; then NR=$REPLY; fi
 }
 
 getShadowInput ()
@@ -1142,7 +1174,7 @@ writeAutoexec ()
   #Write any necessary script commands to autoexec.ash
   echo "#Script created `date`" > $OUTFILE
   echo "#VideoResolution: $RES $FPS $BIT" >> $OUTFILE
-  echo "#CameraParams: $AWB $RNR $YIMAX $SHADOW $BIG_FILE" >> $OUTFILE
+  echo "#CameraParams: $AWB $NR $YIMAX $SHADOW $BIG_FILE" >> $OUTFILE
   echo "#PhotoParams: $ISO $EXP $RAW" >> $OUTFILE
   echo "#Sharpness: $SHR $FIR $COR " >> $OUTFILE  
   echo "#UserSettings: $INC_USER" >> $OUTFILE
@@ -1197,9 +1229,9 @@ writeAutoexec ()
     echo "" >> $OUTFILE
   fi
 
-  if [ "$RNR" == ${XYC_Y} ]; then
-    echo "#Reduce noise reduction as much as possible" >> $OUTFILE
-    echo "t ia2 -adj tidx -1 -1 -1" >> $OUTFILE
+  if [[ ! -z $NR ]]; then
+    echo "#Noise Reduction" >> $OUTFILE
+    echo "t ia2 -adj tidx -1 $NR -1" >> $OUTFILE
     echo "" >> $OUTFILE
   fi
 
@@ -1519,7 +1551,7 @@ writeAutoexec ()
 
     if [ "$TLONCE" == ${XYC_Y} ]; then
       #rewrite a new autoexec.ash with current photo params
-      echo "lu_util exec '$THIS_SCRIPT -i $ISO -e $EXP -w $AWB -n $RNR -r $RAW -u $INC_USER -q'" >> $OUTFILE
+      echo "lu_util exec '$THIS_SCRIPT -i $ISO -e $EXP -w $AWB -n $NR -r $RAW -u $INC_USER -q'" >> $OUTFILE
       echo "" >> $OUTFILE
     fi
 
