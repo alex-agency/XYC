@@ -43,6 +43,7 @@ Changelog:
 - Added support file weight limit to 4GB
 - Added 1440p resolution for testing purpose
 - Added ability managing Noise Reduction
+- Added new bitrates for Video Quality (40-50Mb)
 
 0.3.2 (Sep 2015) by Alex 
 - Updated YiMax script
