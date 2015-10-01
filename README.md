@@ -42,6 +42,7 @@ Changelog:
 - Support latest 1.2.13 firmware
 - Added support file weight limit to 4GB
 - Added 1440p resolution for testing purpose
+- Added ability managing Noise Reduction
 
 0.3.2 (Sep 2015) by Alex 
 - Updated YiMax script
