@@ -35,6 +35,7 @@
 # by Alex          - Added support file weight limit to 4GB
 #                  - Added 1440p resolution for test purpose
 #                  - Added ability managing Noise Reduction
+#                  - Added new bitrates for Video Quality (40-50Mb)
 # 0.3.2 (Sep 2015) - Updated YiMax script
 # by Alex          - Added shadow/highlight/gamma script
 #                  - Added sharpness script
@@ -571,6 +572,13 @@ parseExistingAutoexec ()
   if [ $? -eq 0 ]; then BIT=3; fi
   grep -q "0x420C" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then BIT=4; fi
+  grep -q "0x4220" $AASH 2>/dev/null
+  if [ $? -eq 0 ]; then BIT=5; fi
+  grep -q "0x4234" $AASH 2>/dev/null
+  if [ $? -eq 0 ]; then BIT=6; fi
+  grep -q "0x4248" $AASH 2>/dev/null
+  if [ $? -eq 0 ]; then BIT=7; fi
+
 
   grep -q "writew 0xC03A8520 0x2004" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then BIG_FILE=${XYC_Y}; fi
@@ -946,9 +954,9 @@ getVideoBitrateInput ()
 {
   clear
   echo " ********** ${XYC_VIDEO_BITRATE} ********** "
-  echo " * (1) 20 Mb/s                     * "
-  echo " * (2) 25 Mb/s                     * "
-  echo " * (3) 30 Mb/s                     * "
+  echo " * (1) 20 Mb/s    (5) 40 Mb/s      * "
+  echo " * (2) 25 Mb/s    (6) 45 Mb/s      * "
+  echo " * (3) 30 Mb/s    (7) 50 Mb/s      * "
   echo " * (4) 35 Mb/s                     * "
   echo " *********************************** "
   local REPLY
@@ -1012,6 +1020,9 @@ setRESView ()
       2) RESVIEW="$RESVIEW 25Mb";;
       3) RESVIEW="$RESVIEW 30Mb";;
       4) RESVIEW="$RESVIEW 35Mb";;
+      5) RESVIEW="$RESVIEW 40Mb";;
+      6) RESVIEW="$RESVIEW 45Mb";;
+      7) RESVIEW="$RESVIEW 50Mb";;
     esac
   fi
 }
@@ -1268,6 +1279,18 @@ writeAutoexec ()
         echo "#set bitrate to 35Mb/s" >> $OUTFILE
         echo "writew 0xC05C2152 0x420C" >> $OUTFILE
       fi
+      if [ $BIT -eq 5 ]; then
+        echo "#set bitrate to 40Mb/s" >> $OUTFILE
+        echo "writew 0xC05C2152 0x4220" >> $OUTFILE
+      fi
+      if [ $BIT -eq 6 ]; then
+        echo "#set bitrate to 45Mb/s" >> $OUTFILE
+        echo "writew 0xC05C2152 0x4234" >> $OUTFILE
+      fi
+      if [ $BIT -eq 7 ]; then
+        echo "#set bitrate to 50Mb/s" >> $OUTFILE
+        echo "writew 0xC05C2152 0x4248" >> $OUTFILE
+      fi
     elif [ $FPS -eq 2 ]; then #1280x720 60fps
       echo "#set video frequency to 60fps" >> $OUTFILE
       echo "writeb 0xC06CC426 0x0F" >> $OUTFILE
@@ -1287,6 +1310,18 @@ writeAutoexec ()
         echo "#set bitrate to 35Mb/s" >> $OUTFILE
         echo "writew 0xC05C2122 0x420C" >> $OUTFILE
       fi
+      if [ $BIT -eq 5 ]; then
+        echo "#set bitrate to 40Mb/s" >> $OUTFILE
+        echo "writew 0xC05C2122 0x4220" >> $OUTFILE
+      fi
+      if [ $BIT -eq 6 ]; then
+        echo "#set bitrate to 45Mb/s" >> $OUTFILE
+        echo "writew 0xC05C2122 0x4234" >> $OUTFILE
+      fi
+      if [ $BIT -eq 7 ]; then
+        echo "#set bitrate to 50Mb/s" >> $OUTFILE
+        echo "writew 0xC05C2122 0x4248" >> $OUTFILE
+      fi
     elif [ $FPS -eq 3 ]; then #1280x720 120fps
       echo "#set video frequency to 120fps" >> $OUTFILE
       echo "writeb 0xC06CC426 0x34" >> $OUTFILE
@@ -1305,6 +1340,18 @@ writeAutoexec ()
       if [ $BIT -eq 4 ]; then
         echo "#set bitrate to 35Mb/s" >> $OUTFILE
         echo "writew 0xC05C2812 0x420C" >> $OUTFILE
+      fi
+      if [ $BIT -eq 5 ]; then
+        echo "#set bitrate to 40Mb/s" >> $OUTFILE
+        echo "writew 0xC05C2812 0x4220" >> $OUTFILE
+      fi
+      if [ $BIT -eq 6 ]; then
+        echo "#set bitrate to 45Mb/s" >> $OUTFILE
+        echo "writew 0xC05C2812 0x4234" >> $OUTFILE
+      fi
+      if [ $BIT -eq 7 ]; then
+        echo "#set bitrate to 50Mb/s" >> $OUTFILE
+        echo "writew 0xC05C2812 0x4248" >> $OUTFILE
       fi
     fi
     echo "" >> $OUTFILE
@@ -1329,6 +1376,18 @@ writeAutoexec ()
         echo "#set bitrate to 35Mb/s" >> $OUTFILE
         echo "writew 0xC05C22A2 0x420C" >> $OUTFILE
       fi
+      if [ $BIT -eq 5 ]; then
+        echo "#set bitrate to 40Mb/s" >> $OUTFILE
+        echo "writew 0xC05C22A2 0x4220" >> $OUTFILE
+      fi
+      if [ $BIT -eq 6 ]; then
+        echo "#set bitrate to 45Mb/s" >> $OUTFILE
+        echo "writew 0xC05C22A2 0x4234" >> $OUTFILE
+      fi
+      if [ $BIT -eq 7 ]; then
+        echo "#set bitrate to 50Mb/s" >> $OUTFILE
+        echo "writew 0xC05C22A2 0x4248" >> $OUTFILE
+      fi
     elif [ $FPS -eq 2 ]; then #1280x960 60fps
       echo "#set video frequency to 60fps" >> $OUTFILE
       echo "writeb 0xC06CC426 0x16" >> $OUTFILE
@@ -1347,6 +1406,18 @@ writeAutoexec ()
       if [ $BIT -eq 4 ]; then
         echo "#set bitrate to 35Mb/s" >> $OUTFILE
         echo "writew 0xC05C2272 0x420C" >> $OUTFILE
+      fi
+      if [ $BIT -eq 5 ]; then
+        echo "#set bitrate to 40Mb/s" >> $OUTFILE
+        echo "writew 0xC05C2272 0x4220" >> $OUTFILE
+      fi
+      if [ $BIT -eq 6 ]; then
+        echo "#set bitrate to 45Mb/s" >> $OUTFILE
+        echo "writew 0xC05C2272 0x4234" >> $OUTFILE
+      fi
+      if [ $BIT -eq 7 ]; then
+        echo "#set bitrate to 50Mb/s" >> $OUTFILE
+        echo "writew 0xC05C2272 0x4248" >> $OUTFILE
       fi
     fi
     echo "" >> $OUTFILE
@@ -1371,6 +1442,18 @@ writeAutoexec ()
         echo "#set bitrate to 35Mb/s" >> $OUTFILE
         echo "writew 0xC05C20C2 0x420C" >> $OUTFILE
       fi
+      if [ $BIT -eq 5 ]; then
+        echo "#set bitrate to 40Mb/s" >> $OUTFILE
+        echo "writew 0xC05C20C2 0x4220" >> $OUTFILE
+      fi
+      if [ $BIT -eq 6 ]; then
+        echo "#set bitrate to 45Mb/s" >> $OUTFILE
+        echo "writew 0xC05C20C2 0x4234" >> $OUTFILE
+      fi
+      if [ $BIT -eq 7 ]; then
+        echo "#set bitrate to 50Mb/s" >> $OUTFILE
+        echo "writew 0xC05C20C2 0x4248" >> $OUTFILE
+      fi
     elif [ $FPS -eq 2 ]; then #1600x1200 60fps
       echo "#set video frequency to 60fps" >> $OUTFILE
       echo "writeb 0xC06CC426 0x0C" >> $OUTFILE
@@ -1389,6 +1472,18 @@ writeAutoexec ()
       if [ $BIT -eq 4 ]; then
         echo "#set bitrate to 35Mb/s" >> $OUTFILE
         echo "writew 0xC05C2092 0x420C" >> $OUTFILE
+      fi
+      if [ $BIT -eq 5 ]; then
+        echo "#set bitrate to 40Mb/s" >> $OUTFILE
+        echo "writew 0xC05C2092 0x4220" >> $OUTFILE
+      fi
+      if [ $BIT -eq 6 ]; then
+        echo "#set bitrate to 45Mb/s" >> $OUTFILE
+        echo "writew 0xC05C2092 0x4234" >> $OUTFILE
+      fi
+      if [ $BIT -eq 7 ]; then
+        echo "#set bitrate to 50Mb/s" >> $OUTFILE
+        echo "writew 0xC05C2092 0x4248" >> $OUTFILE
       fi
     fi
     echo "" >> $OUTFILE
@@ -1413,6 +1508,18 @@ writeAutoexec ()
         echo "#set bitrate to 35Mb/s" >> $OUTFILE
         echo "writew 0xC05C1F72 0x420C" >> $OUTFILE
       fi
+      if [ $BIT -eq 5 ]; then
+        echo "#set bitrate to 40Mb/s" >> $OUTFILE
+        echo "writew 0xC05C1F72 0x4220" >> $OUTFILE
+      fi
+      if [ $BIT -eq 6 ]; then
+        echo "#set bitrate to 45Mb/s" >> $OUTFILE
+        echo "writew 0xC05C1F72 0x4234" >> $OUTFILE
+      fi
+      if [ $BIT -eq 7 ]; then
+        echo "#set bitrate to 50Mb/s" >> $OUTFILE
+        echo "writew 0xC05C1F72 0x4248" >> $OUTFILE
+      fi
     elif [ $FPS -eq 2 ]; then #1920x1080 60fps
       echo "#set video frequency to 60fps" >> $OUTFILE
       echo "writeb 0xC06CC426 0x03" >> $OUTFILE
@@ -1431,6 +1538,18 @@ writeAutoexec ()
       if [ $BIT -eq 4 ]; then
         echo "#set bitrate to 35Mb/s" >> $OUTFILE
         echo "writew 0xC05C1EE2 0x420C" >> $OUTFILE
+      fi
+      if [ $BIT -eq 5 ]; then
+        echo "#set bitrate to 40Mb/s" >> $OUTFILE
+        echo "writew 0xC05C1EE2 0x4220" >> $OUTFILE
+      fi
+      if [ $BIT -eq 6 ]; then
+        echo "#set bitrate to 45Mb/s" >> $OUTFILE
+        echo "writew 0xC05C1EE2 0x4234" >> $OUTFILE
+      fi
+      if [ $BIT -eq 7 ]; then
+        echo "#set bitrate to 50Mb/s" >> $OUTFILE
+        echo "writew 0xC05C1EE2 0x4248" >> $OUTFILE
       fi
     fi
     echo "" >> $OUTFILE
@@ -1455,6 +1574,18 @@ writeAutoexec ()
         echo "#set bitrate to 35Mb/s" >> $OUTFILE
         echo "writew 0xC05C1EB2 0x420C" >> $OUTFILE
       fi
+      if [ $BIT -eq 5 ]; then
+        echo "#set bitrate to 40Mb/s" >> $OUTFILE
+        echo "writew 0xC05C1EB2 0x4220" >> $OUTFILE
+      fi
+      if [ $BIT -eq 6 ]; then
+        echo "#set bitrate to 45Mb/s" >> $OUTFILE
+        echo "writew 0xC05C1EB2 0x4234" >> $OUTFILE
+      fi
+      if [ $BIT -eq 7 ]; then
+        echo "#set bitrate to 50Mb/s" >> $OUTFILE
+        echo "writew 0xC05C1EB2 0x4248" >> $OUTFILE
+      fi
     fi
     echo "" >> $OUTFILE
   elif [ $RES -eq 6 ]; then
@@ -1477,6 +1608,18 @@ writeAutoexec ()
       if [ $BIT -eq 4 ]; then
         echo "#set bitrate to 35Mb/s" >> $OUTFILE
         echo "writew 0xC05C1E52 0x420C" >> $OUTFILE
+      fi
+      if [ $BIT -eq 5 ]; then
+        echo "#set bitrate to 40Mb/s" >> $OUTFILE
+        echo "writew 0xC05C1E52 0x4220" >> $OUTFILE
+      fi
+      if [ $BIT -eq 6 ]; then
+        echo "#set bitrate to 45Mb/s" >> $OUTFILE
+        echo "writew 0xC05C1E52 0x4234" >> $OUTFILE
+      fi
+      if [ $BIT -eq 7 ]; then
+        echo "#set bitrate to 50Mb/s" >> $OUTFILE
+        echo "writew 0xC05C1E52 0x4248" >> $OUTFILE
       fi
     fi
     echo "" >> $OUTFILE
