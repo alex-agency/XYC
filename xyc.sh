@@ -36,6 +36,7 @@
 #                  - Added 1440p resolution for test purpose
 #                  - Added ability managing Noise Reduction
 #                  - Added new bitrates for Video Quality (40-50Mb)
+#                  - Added XYC Update feature for automatic download new version
 # 0.3.2 (Sep 2015) - Updated YiMax script
 # by Alex          - Added shadow/highlight/gamma script
 #                  - Added sharpness script
@@ -54,11 +55,17 @@
 
 VERS="0.3.3 Alex"
 FUSED=/tmp/fuse_d
-#FUSED=`pwd`
+SCRIPT_DIR=$(cd `dirname "$0"` && pwd)
+WEB=/var/www
+if [ ! -d "$FUSED" ]; then
+  FUSED=$SCRIPT_DIR
+  if [ -d "$WEB" ]; then
+    FUSED=$WEB
+  fi
+fi
 AASH=${FUSED}/autoexec.ash
 PRAWNCONF=${FUSED}/goprawn.config
 CORCONF=${FUSED}/coring.config
-SCRIPT_DIR=$(cd `dirname "$0"` && pwd)
 THIS_SCRIPT="$SCRIPT_DIR/`basename "$0"`"
 LANGUAGE_FILE="$SCRIPT_DIR/xyc_strings.sh"
 USER_SETTINGS_FILE="$SCRIPT_DIR/autoexec.xyc"
@@ -185,6 +192,8 @@ XYC_CUSTOM_NR="Custom NR"
 XYC_CUSTOM_NR_PROMPT="Enter Noise Reduction (0-16383)"
 XYC_MAX="Max"
 XYC_DISABLE="Disable"
+XYC_UPDATING_NOW="Updating now"
+XYC_SCRIPT_UPDATE="XYC Update"
 
 #If language file exists, source it to override English language UI strings
 if [[ -s "$LANGUAGE_FILE" && -r "$LANGUAGE_FILE" ]]; then
@@ -208,7 +217,7 @@ welcome ()
   clear
   echo ""
   echo " *  Xiaomi Yi Configurator  * "
-  echo " *  10/1/2015   ${VERS}  * "
+  echo " *  10/23/2015  ${VERS}  * "
   echo ""
 }
 
@@ -224,7 +233,8 @@ showMainMenu ()
     echo " [4] $XYC_RESET_SETTINGS"
     echo " [5] $XYC_SHOW_CARD_SPACE"
     echo " [6] $XYC_RESTART_CAMERA"
-    echo " [7] $XYC_EXIT"
+    echo " [7] $XYC_SCRIPT_UPDATE"
+    echo " [8] $XYC_EXIT"
 
     read -p "${XYC_SELECT_OPTION}: " REPLY
     clear
@@ -236,7 +246,8 @@ showMainMenu ()
       4) removeAutoexec; resetCameraSettings;;
       5) showSpaceUsage;;
       6) EXITACTION="reboot";;
-      7) EXITACTION="nothing";;
+      7) EXITACTION="update";;
+      8) EXITACTION="nothing";;
       *) echo "$XYC_INVALID_CHOICE"; REPLY=0;;
     esac
 
@@ -1166,11 +1177,11 @@ removeAutoexec ()
   #Note: This works in "t": rm 'd:\autoexec.ash'
   echo "${XYC_DELETING} $AASH" 
   rm -f $AASH
-  if [[ "$PRAWNCONF" && -r "$PRAWNCONF" ]]; then
+  if [[ "$PRAWNCONF" && -w "$PRAWNCONF" ]]; then
     echo "${XYC_DELETING} $PRAWNCONF" 
     rm -f $PRAWNCONF
   fi
-  if [[ "$CORCONF" && -r "$CORCONF" ]]; then
+  if [[ "$CORCONF" && -w "$CORCONF" ]]; then
     echo "${XYC_DELETING} $CORCONF" 
     rm -f $CORCONF
   fi
@@ -1830,7 +1841,34 @@ else
   showMainMenu
 fi
 
-if [ "$EXITACTION" == "reboot" ]; then
+if [ "$EXITACTION" == "update" ]; then
+  echo ""
+  echo " *********************************** "
+  echo " *                                 * "
+  echo " *        ${XYC_UPDATING_NOW}...          * "
+  echo " *                                 * "
+  echo " *********************************** "
+  echo ""
+  sleep 1
+  clear
+  if which git >/dev/null; then
+    git clone https://github.com/alex-agency/XYC.git
+    if [[ -d $SCRIPT_DIR/XYC && -r $SCRIPT_DIR/XYC/xyc.sh ]]; then
+      cp $SCRIPT_DIR/XYC/xyc.sh $SCRIPT_DIR/xyc.sh
+      rm -rf $SCRIPT_DIR/XYC
+      bash $SCRIPT_DIR/xyc.sh
+    fi
+  else
+    echo ""
+    echo " git: command not found "
+    echo " For update you should have Git. "
+    echo ""
+    echo " For download script manually browse to: "
+    echo " https://github.com/alex-agency/XYC.git "
+    echo ""
+    read -p "[${XYC_ENTER}]"
+  fi  
+elif [ "$EXITACTION" == "reboot" ]; then
   echo ""
   echo " *********************************** "
   echo " *                                 * "
