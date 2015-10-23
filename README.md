@@ -45,6 +45,7 @@ Changelog:
 - Added 1440p resolution for testing purpose
 - Added ability managing Noise Reduction
 - Added new bitrates for Video Quality (40-50Mb)
+- Added XYC Update feature for automatic download new version
 
 0.3.2 (Sep 2015) by Alex 
 - Updated YiMax script
