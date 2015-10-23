@@ -1852,6 +1852,7 @@ if [ "$EXITACTION" == "update" ]; then
   sleep 1
   clear
   if which git >/dev/null; then
+    cd $SCRIPT_DIR
     git clone https://github.com/alex-agency/XYC.git
     if [[ -d $SCRIPT_DIR/XYC && -r $SCRIPT_DIR/XYC/xyc.sh ]]; then
       cp $SCRIPT_DIR/XYC/xyc.sh $SCRIPT_DIR/xyc.sh
