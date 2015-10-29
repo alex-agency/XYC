@@ -2,7 +2,7 @@
 
 Xiaomi Yi Configurator (XYC)
 ==========================
-[Tawbaware software, 2015](http://www.tawbaware.com)
+[© Tawbaware software, 2015](http://www.tawbaware.com)
 
 This script runs inside the Xiaomi Yi camera and allows the user to enable RAW file creation, and change photographic options such as exposure, ISO, whitebalance, etc. It is designed to be executed and accessed via a telnet client running on any phone, computer, tablet, etc.
 
