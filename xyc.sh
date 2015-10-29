@@ -4,9 +4,8 @@
 #
 # Description: This script runs inside the Xiaomi Yi camera and allows the user
 # to enable RAW file creation, and change photographic options such as
-# exposure, ISO, whitebalance, etc.  In addition, a photographic time-lapse
-# feature is also available.  It is designed to be executed and accessed via
-# a telnet client running on any phone, computer, tablet, etc.
+# exposure, ISO, whitebalance, etc. It is designed to be executed and accessed 
+# via a telnet client running on any phone, computer, tablet, etc.
 #
 #
 # Installation:
@@ -22,6 +21,9 @@
 # 3. Optional.  If you want XYC to operate in a language other than English,
 #    create a file named xyc_strings.sh in the same directory as xyc.sh.  See
 #    "TRANSLATION STRINGS" section below.
+# 4. Optional. If you want RAW Time Lapse than enable Create RAW camera setting, 
+#    save settings and go to official Xiaomi YiCam app -> Photo Time-lapse. 
+#    Also you can use other camera settings to configure Time-lapse footage. 
 #
 # Usage:
 #
@@ -37,6 +39,7 @@
 #                  - Added ability managing Noise Reduction
 #                  - Added new bitrates for Video Quality (40-50Mb)
 #                  - Added XYC Update feature for automatic download new version
+#                  - Removed Time Lapse script (use YiCam app Time-lapse with XYC camera settings)
 # 0.3.2 (Sep 2015) - Updated YiMax script
 # by Alex          - Added shadow/highlight/gamma script
 #                  - Added sharpness script
@@ -82,16 +85,11 @@ USER_SETTINGS_FILE="$SCRIPT_DIR/autoexec.xyc"
 # in that file.
 
 XYC_MAIN_MENU="Main Menu"
-XYC_VIEW_SETTINGS="View custom photo settings"
-XYC_EDIT_SETTINGS="Edit custom photo settings"
 XYC_VIEW_EDIT_SETTINGS="View/Edit camera settings"
 XYC_RESET_SETTINGS="Reset/Delete camera settings"
-XYC_CURRENT_SETTINGS="Current custom photo settings"
-XYC_CREATE_TIME_LAPSE="Create/Run time-lapse script"
 XYC_SHOW_CARD_SPACE="Show SD card space usage"
 XYC_RESTART_CAMERA="Restart camera"
 XYC_EXIT="Exit"
-XYC_BACK="Back"
 XYC_SAVE_AND_BACK="<- Save & Back"
 XYC_SELECT_OPTION="Select option"
 XYC_INVALID_CHOICE="Invalid choice"
@@ -117,30 +115,18 @@ XYC_Y="y"
 XYC_N="n"
 XYC_ON="On"
 XYC_OFF="Off"
-XYC_TIME_LAPSE_PARAMS="TLParams"
 XYC_AUTO="Auto"
 XYC_ENTER="Enter"
 XYC_CHOOSE="Choose"
 XYC_ENTER_AWB_PROMPT="Auto-Whitebalance (y/n)"
 XYC_CREATE_RAW_PROMPT="Create RAW files (y/n)"
-XYC_ENTER_NUM_SHOTS_MENU="Number of images (0=off)"
-XYC_ENTER_NUM_SHOTS_PROMPT="Enter number of images (0=off, 1-9999)"
-XYC_RUN_ONCE_ONLY_MENU="One-time script"
-XYC_RUN_ONCE_ONLY_PROMPT="Run once only? (y=once/n=multi)"
-XYC_POWEROFF_WHEN_COMPLETE_MENU="Poweroff when complete"
-XYC_POWEROFF_WHEN_COMPLETE_PROMPT="Poweroff when complete (y/n)"
-XYC_DELAY_BETWEEN_SHUTTER_MENU="Delay between shutter"
-XYC_DELAY_BETWEEN_SHUTTER_PROMPT="Delay between shutter press (secs)"
 XYC_RESTART_NOW_PROMPT="Restart camera now (y/n)"
 XYC_REBOOTING_NOW="Rebooting now"
-XYC_SHUTTING_DOWN_NOW="Shutting down now"
 XYC_WRITING="Writing"
 XYC_DELETING="Deleting"
 XYC_CREATE_HDR="Create/Run HDR script"
-XYC_PHOTO_SETTINGS_MENU="Custom Photo Settings Menu"
 XYC_CAMERA_SETTINGS_MENU="Camera Settings Menu"
 XYC_INCLUDE_USER_SETTINGS_PROMPT="Import additional settings from autoexec.xyc (y/n)"
-XYC_TIME_LAPSE_MENU="Time Lapse Menu"
 XYC_HDR_MENU="HDR Settings Menu"
 XYC_CANNOT_READ="WARNING: Cannot read/access"
 XYC_YIMAX_MOVIE="YiMax Movie"
@@ -157,7 +143,6 @@ XYC_HDR_AUTO_DAY="HDR Auto"
 XYC_HDR_AUTO_NIGHT="HDR Auto Night"
 XYC_HDR_ADVANCED="HDR Advanced"
 XYC_HDR_RESET="Delete HDR"
-XYC_HDR_AFTER_RESTART="HDR photos will take after restart!"
 XYC_HDR_EXPOSURE="HDR picture Exposure"
 XYC_THIRD="Third"
 XYC_SECOND="Second"
@@ -175,7 +160,6 @@ XYC_SHARPNESS_MENU="Sharpness Menu"
 XYC_SHARPNESS_MODE="Sharpness Mode"
 XYC_SHARPNESS_FIR="Digital Filter"
 XYC_SHARPNESS_COR="Coring"
-XYC_RESET_DEFAULT="Reset to Default"
 XYC_SHR_MODE_VIDEO="Video"
 XYC_SHR_MODE_FAST="Fast Still"
 XYC_SHR_MODE_LOWISO="LowISO Still"
@@ -202,13 +186,6 @@ fi
 
 #=============================================================================
 
-#Time-lapse params:
-TLNUM=10
-TLONCE=${XYC_N}
-TLOFF=${XYC_Y}
-TLDELAY=12
-NOUI=0
-
 #Other settings
 unset EXITACTION
 
@@ -217,7 +194,7 @@ welcome ()
   clear
   echo ""
   echo " *  Xiaomi Yi Configurator  * "
-  echo " *  10/23/2015  ${VERS}  * "
+  echo " *  10/29/2015  ${VERS}  * "
   echo ""
 }
 
@@ -228,26 +205,24 @@ showMainMenu ()
   do
     echo "    ====== ${XYC_MAIN_MENU} ====="
     echo " [1] $XYC_VIEW_EDIT_SETTINGS"
-    echo " [2] $XYC_CREATE_TIME_LAPSE"
-    echo " [3] $XYC_CREATE_HDR"
-    echo " [4] $XYC_RESET_SETTINGS"
-    echo " [5] $XYC_SHOW_CARD_SPACE"
-    echo " [6] $XYC_RESTART_CAMERA"
-    echo " [7] $XYC_SCRIPT_UPDATE"
-    echo " [8] $XYC_EXIT"
+    echo " [2] $XYC_CREATE_HDR"
+    echo " [3] $XYC_RESET_SETTINGS"
+    echo " [4] $XYC_SHOW_CARD_SPACE"
+    echo " [5] $XYC_RESTART_CAMERA"
+    echo " [6] $XYC_SCRIPT_UPDATE"
+    echo " [7] $XYC_EXIT"
 
     read -p "${XYC_SELECT_OPTION}: " REPLY
     clear
     case $REPLY in
       0) cat $AASH;;
       1) showSettingsMenu; writeAutoexec $AASH "settings";;
-      2) showTimeLapseMenu; writeAutoexec $AASH "timelapse";;
-      3) showHDRMenu; writeAutoexec $AASH "hdr";;
-      4) removeAutoexec; resetCameraSettings;;
-      5) showSpaceUsage;;
-      6) EXITACTION="reboot";;
-      7) EXITACTION="update";;
-      8) EXITACTION="nothing";;
+      2) showHDRMenu; writeAutoexec $AASH "hdr";;
+      3) removeAutoexec; resetCameraSettings;;
+      4) showSpaceUsage;;
+      5) EXITACTION="reboot";;
+      6) EXITACTION="update";;
+      7) EXITACTION="nothing";;
       *) echo "$XYC_INVALID_CHOICE"; REPLY=0;;
     esac
 
@@ -340,33 +315,6 @@ showSettingsMenu ()
       *) clear; echo "$XYC_INVALID_CHOICE"; REPLY=0;;
     esac
   done
-}
-
-showTimeLapseMenu ()
-{
-  local REPLY=0
-  resetDelaySuggestion
-  while [[ $REPLY -gt -1 && $REPLY -lt 6 ]]
-  do
-    echo "    ===== ${XYC_TIME_LAPSE_MENU} ====="
-    echo " [1] ${XYC_ENTER_NUM_SHOTS_MENU} : $TLNUM"
-    echo " [2] ${XYC_DELAY_BETWEEN_SHUTTER_MENU}    : $TLDELAY"
-    echo " [3] ${XYC_POWEROFF_WHEN_COMPLETE_MENU}   : $TLOFF"
-    echo " [4] ${XYC_RUN_ONCE_ONLY_MENU}          : $TLONCE"
-    echo " [5] $XYC_SAVE_AND_BACK"
-
-    read -p "${XYC_SELECT_OPTION}: " REPLY
-    case $REPLY in
-      1) getTLNumShots; clear;;
-      2) getTLDelay; clear;;
-      3) getTLOff; clear;;
-      4) getTLOnce; clear;;
-      5) clear; return 0;;
-      *) clear; echo "$XYC_INVALID_CHOICE"; REPLY=0;;
-    esac
-  done
-
-  clear
 }
 
 showHDRMenu ()
@@ -499,7 +447,6 @@ parseCommandLine ()
       -s) SHADOW=$2; shift;;
       -b) BIG_FILE=$2; shift;;
       -u) INC_USER=$2; shift;;
-      -q) NOUI=1;;
        *) echo "${XYC_UNKNOWN_OPTION}: $key"; shift;;
     esac
     shift # past argument or value
@@ -522,14 +469,6 @@ parseExistingAutoexec ()
 
   grep -q "#UserSettings: y" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then INC_USER=${XYC_Y}; fi
-
-  grep -q "#TimeLapseParams:" $AASH 2>/dev/null
-  if [ $? -eq 0 ]; then
-    TLNUM=`grep "#TimeLapseParams:" $AASH | cut -d " " -f 2`
-    TLONCE=`grep "#TimeLapseParams:" $AASH | cut -d " " -f 3`
-    TLOFF=`grep "#TimeLapseParams:" $AASH | cut -d " " -f 4`
-    TLDELAY=`grep "#TimeLapseParams:" $AASH | cut -d " " -f 5`
-  fi
 
   grep -q "#HDRParams:" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then
@@ -617,31 +556,6 @@ setMissingValues ()
   if [[ "$YIMAX" != ${XYC_Y} && "$YIMAX" != ${XYC_N} ]]; then YIMAX=${XYC_N}; fi
   if [[ "$SHADOW" != ${XYC_Y} && "$SHADOW" != ${XYC_N} ]]; then SHADOW=${XYC_N}; fi
   if [ -z "$RES" ]; then RES=0; FPS=1; BIT=2; else setRESView; fi
-}
-
-resetDelaySuggestion ()
-{
-  #Delay should be sum of file write time (WT) and exposure time (ET)
-  #if delay is too short, then the camera doesn't write the RAW file...
-  #make delay longer as necessary, depending on shutter speed and SD card
-  #performance
-  local WT=12
-  local ET=0
-  if [ -n $EXP ]; then
-    if [ $EXP -eq 0 ]; then ET=1;
-    elif [ $EXP -lt 30 ]; then ET=8;
-    elif [ $EXP -lt 50 ]; then ET=7;
-    elif [ $EXP -lt 90 ]; then ET=6;
-    elif [ $EXP -lt 150 ]; then ET=5;
-    elif [ $EXP -lt 200 ]; then ET=4;
-    elif [ $EXP -lt 300 ]; then ET=3;
-    elif [ $EXP -lt 400 ]; then ET=2;
-    elif [ $EXP -lt 1000 ]; then ET=1;
-    else ET=0;
-    fi
-  fi
-
-  return `expr $WT + $ET`
 }
 
 getExposureInput ()
@@ -1067,41 +981,6 @@ getIncludeUserSettings ()
   if [[ "$REPLY" == ${XYC_Y} || "$REPLY" == ${XYC_N} ]]; then INC_USER=$REPLY; fi
 }
 
-
-getTLNumShots()
-{
-  clear  
-  local REPLY=$TLNUM
-  read -p "${XYC_ENTER_NUM_SHOTS_PROMPT} [${XYC_ENTER}=$TLNUM]: " REPLY
-  if [ -n "$REPLY" ]; then TLNUM=$REPLY; fi
-}
-
-getTLOnce()
-{
-  clear  
-  local REPLY=$TLONCE
-  read -p "${XYC_RUN_ONCE_ONLY_PROMPT} [${XYC_ENTER}=$TLONCE]: " REPLY
-  if [[ "$REPLY" == ${XYC_Y} || "$REPLY" == ${XYC_N} ]]; then TLONCE=$REPLY; fi
-}
-
-getTLOff()
-{
-  clear  
-  local REPLY=$TLOFF
-  read -p "${XYC_POWEROFF_WHEN_COMPLETE_PROMPT} [${XYC_ENTER}=$TLOFF]: " REPLY
-  if [[ "$REPLY" == ${XYC_Y} || "$REPLY" == ${XYC_N} ]]; then TLOFF=$REPLY; fi
-}
-
-getTLDelay()
-{
-  clear  
-  #resetDelaySuggestion
-  #TLDELAY=$?
-  local REPLY=$TLOFF
-  read -p "${XYC_DELAY_BETWEEN_SHUTTER_PROMPT} [${XYC_ENTER}=$TLDELAY]: " REPLY
-  if [ -n "$REPLY" ]; then TLDELAY=$REPLY; fi
-}
-
 getHDRInput ()
 {
   clear
@@ -1200,7 +1079,6 @@ writeAutoexec ()
   echo "#PhotoParams: $ISO $EXP $RAW" >> $OUTFILE
   echo "#Sharpness: $SHR $FIR $COR " >> $OUTFILE  
   echo "#UserSettings: $INC_USER" >> $OUTFILE
-  echo "#TimeLapseParams: $TLNUM $TLONCE $TLOFF $TLDELAY" >> $OUTFILE
   echo "#HDRParams: $AUTAN $HDR1 $HDR2 $HDR3" >> $OUTFILE
   echo "" >> $OUTFILE
 
@@ -1688,32 +1566,6 @@ writeAutoexec ()
     echo "chromatic_aberration_correction.enable 1" >> $PRAWNCONF
     echo "chroma_filt.enable 0" >> $PRAWNCONF
   fi
-  
-  #If requested, write time-lapse script
-  if [ "$SCRIPT_TYPE" == "timelapse" ]; then
-    echo "#Timelapse Script:" >> $OUTFILE
-    #Pause to allow camera to boot up before starting
-    echo "sleep 10" >> $OUTFILE
-
-    CTR=0
-    while [ $CTR -lt $TLNUM ];  do
-      echo "t app key shutter" >> $OUTFILE
-      echo "sleep $TLDELAY" >> $OUTFILE
-      CTR=`expr $CTR + 1`
-    done
-    echo "" >> $OUTFILE
-
-    if [ "$TLONCE" == ${XYC_Y} ]; then
-      #rewrite a new autoexec.ash with current photo params
-      echo "lu_util exec '$THIS_SCRIPT -i $ISO -e $EXP -w $AWB -n $NR -r $RAW -u $INC_USER -q'" >> $OUTFILE
-      echo "" >> $OUTFILE
-    fi
-
-    if [ "$TLOFF" == ${XYC_Y} ]; then
-      echo "poweroff yes" >> $OUTFILE
-      echo "" >> $OUTFILE
-    fi
-  fi
 
   #If requested, write hdr script
   if [[ "$SCRIPT_TYPE" == "hdr" && ! -z $AUTAN ]]; then
@@ -1833,13 +1685,8 @@ promptToRestart ()
 parseExistingAutoexec
 parseCommandLine $*
 setMissingValues
-
-if [ $NOUI -eq 1 ]; then
-  writeAutoexec
-else
-  welcome
-  showMainMenu
-fi
+welcome
+showMainMenu
 
 if [ "$EXITACTION" == "update" ]; then
   echo ""
@@ -1879,14 +1726,4 @@ elif [ "$EXITACTION" == "reboot" ]; then
   echo ""
   sleep 1
   reboot yes
-elif [ "$EXITACTION" == "poweroff" ]; then
-  echo ""
-  echo " *********************************** "
-  echo " *                                 * "
-  echo " *      ${XYC_SHUTTING_DOWN_NOW}...       * "
-  echo " *                                 * "
-  echo " *********************************** "
-  echo ""
-  sleep 1
-  poweroff yes
 fi

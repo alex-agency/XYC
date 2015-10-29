@@ -6,9 +6,8 @@ http://www.tawbaware.com
 
 Description: This script runs inside the Xiaomi Yi camera and allows the user
 to enable RAW file creation, and change photographic options such as
-exposure, ISO, whitebalance, etc.  In addition, a photographic time-lapse
-feature is also available.  It is designed to be executed and accessed via
-a telnet client running on any phone, computer, tablet, etc.
+exposure, ISO, whitebalance, etc. It is designed to be executed and accessed 
+via a telnet client running on any phone, computer, tablet, etc.
 
 <img width="309" src="https://cloud.githubusercontent.com/assets/1122708/10204186/020da82c-67c3-11e5-876b-1d81f47e87e6.jpg">  <img width="309" src="https://cloud.githubusercontent.com/assets/1122708/10204185/020c3884-67c3-11e5-9831-5f00f2c42b93.jpg">
 <img width="309" src="https://cloud.githubusercontent.com/assets/1122708/10204182/02079c8e-67c3-11e5-9f9a-156afc9452e8.jpg">  <img width="309" src="https://cloud.githubusercontent.com/assets/1122708/10204183/020a636a-67c3-11e5-9b5a-179ce842a2c7.jpg">
@@ -30,6 +29,9 @@ Installation:
 3. Optional.  If you want XYC to operate in a language other than English,
    create a file named xyc_strings.sh in the same directory as xyc.sh.  See
    "TRANSLATION STRINGS" section below.
+4. Optional. If you want RAW Time Lapse than enable Create RAW camera setting, 
+   save settings and go to official Xiaomi YiCam app -> Photo Time-lapse. 
+   Also you can use other camera settings to configure Time-lapse footage. 
 
 Usage:
 
@@ -46,6 +48,7 @@ Changelog:
 - Added ability managing Noise Reduction
 - Added new bitrates for Video Quality (40-50Mb)
 - Added XYC Update feature for automatic download new version
+- Removed Time Lapse script (use YiCam app Time-lapse with XYC camera settings)
 
 0.3.2 (Sep 2015) by Alex 
 - Updated YiMax script
