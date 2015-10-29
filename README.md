@@ -4,19 +4,17 @@ Xiaomi Yi Configurator (XYC)
 ==========================
 [Tawbaware software, 2015](http://www.tawbaware.com)
 
-This script runs inside the Xiaomi Yi camera and allows the user to enable RAW file creation, and change photographic options such as exposure, ISO, whitebalance, etc.  
-It is designed to be executed and accessed via a telnet client running on any phone, computer, tablet, etc.
+This script runs inside the Xiaomi Yi camera and allows the user to enable RAW file creation, and change photographic options such as exposure, ISO, whitebalance, etc. It is designed to be executed and accessed via a telnet client running on any phone, computer, tablet, etc.
 
 <img width="309" src="https://cloud.githubusercontent.com/assets/1122708/10204186/020da82c-67c3-11e5-876b-1d81f47e87e6.jpg">  <img width="309" src="https://cloud.githubusercontent.com/assets/1122708/10204185/020c3884-67c3-11e5-9831-5f00f2c42b93.jpg">
 <img width="309" src="https://cloud.githubusercontent.com/assets/1122708/10204182/02079c8e-67c3-11e5-9f9a-156afc9452e8.jpg">  <img width="309" src="https://cloud.githubusercontent.com/assets/1122708/10204183/020a636a-67c3-11e5-9b5a-179ce842a2c7.jpg">
 <img width="309" src="https://cloud.githubusercontent.com/assets/1122708/10204184/020af41a-67c3-11e5-9ba0-412c8df99d72.jpg">  <img width="309" src="https://cloud.githubusercontent.com/assets/1122708/10204187/020ee1b0-67c3-11e5-8c1b-0e2466283d5e.jpg">
 <img width="309" src="https://cloud.githubusercontent.com/assets/1122708/10204188/021f9186-67c3-11e5-9a5f-6c476ed3d81f.jpg">  <img width="309" src="https://cloud.githubusercontent.com/assets/1122708/10204189/02257092-67c3-11e5-824f-1a8ab38489ef.jpg">
 
-
 # Installation
 
-1. Install script at top level of SD card and ensure execute permissions: 
-        `chmod 755 /tmp/fuse_d/xyc.sh`   
+1. Install script at top level of SD card and ensure execute permissions:    
+`chmod 755 /tmp/fuse_d/xyc.sh`   
 2. Optional.  If you have custom settings (e.g. bitrate, video size, etc.)
    that you want to be included in the autoexec.ash file, store these commands
    in a  file named autoexec.xyc in the same directory as xyc.sh.  Also, using
