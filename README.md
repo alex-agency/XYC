@@ -32,7 +32,7 @@ This script runs inside the Xiaomi Yi camera and allows the user to enable RAW f
 
 1. Enable wifi, and connect to camera using telnet
    (IP=192.168.42.1, user id="root", no password)
-2. Run script: /tmp/fuse_d/xyc.sh
+2. Run script: `/tmp/fuse_d/xyc.sh`
 
 # Changelog
 
