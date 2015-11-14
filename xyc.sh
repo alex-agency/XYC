@@ -33,6 +33,8 @@
 #
 # Changelog:
 #
+# 0.3.4 (Nov 2015) - Support for 48fps video 
+# by Alex          - Increase script performance
 # 0.3.3 (Oct 2015) - Support latest 1.2.13 firmware
 # by Alex          - Added support file weight limit to 4GB
 #                  - Added 1440p resolution for test purpose
@@ -56,7 +58,7 @@
 # undocumented features of the Xiaomi Yi. Using this software may void your
 # camera's warranty and possibly damage your camera.  Use at your own risk!
 
-VERS="0.3.3 Alex"
+VERS="0.3.4 Alex"
 FUSED=/tmp/fuse_d
 SCRIPT_DIR=$(cd `dirname "$0"` && pwd)
 WEB=/var/www
@@ -194,7 +196,7 @@ welcome ()
   clear
   echo ""
   echo " *  Xiaomi Yi Configurator  * "
-  echo " *  10/29/2015  ${VERS}  * "
+  echo " *  11/14/2015  ${VERS}  * "
   echo ""
 }
 
@@ -493,41 +495,49 @@ parseExistingAutoexec ()
 
   grep -q "writeb 0xC06CC426 0x11" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=1; FPS=1; fi
-  grep -q "writeb 0xC06CC426 0x0F" $AASH 2>/dev/null
+  grep -q "writeb 0xC06CC426 0x27" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=1; FPS=2; fi
-  grep -q "writeb 0xC06CC426 0x34" $AASH 2>/dev/null
+  grep -q "writeb 0xC06CC426 0x0F" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=1; FPS=3; fi
+  grep -q "writeb 0xC06CC426 0x34" $AASH 2>/dev/null
+  if [ $? -eq 0 ]; then RES=1; FPS=4; fi
   grep -q "writeb 0xC06CC426 0x17" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=2; FPS=1; fi
-  grep -q "writeb 0xC06CC426 0x16" $AASH 2>/dev/null
+  grep -q "writeb 0xC06CC426 0x25" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=2; FPS=2; fi
+  grep -q "writeb 0xC06CC426 0x16" $AASH 2>/dev/null
+  if [ $? -eq 0 ]; then RES=2; FPS=3; fi
   grep -q "writeb 0xC06CC426 0x0D" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=3; FPS=1; fi
-  grep -q "writeb 0xC06CC426 0x0C" $AASH 2>/dev/null
+  grep -q "writeb 0xC06CC426 0x23" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=3; FPS=2; fi
+  grep -q "writeb 0xC06CC426 0x0C" $AASH 2>/dev/null
+  if [ $? -eq 0 ]; then RES=3; FPS=3; fi
   grep -q "writeb 0xC06CC426 0x06" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=4; FPS=1; fi
-  grep -q "writeb 0xC06CC426 0x03" $AASH 2>/dev/null
+  grep -q "writeb 0xC06CC426 0x20" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=4; FPS=2; fi
+  grep -q "writeb 0xC06CC426 0x03" $AASH 2>/dev/null
+  if [ $? -eq 0 ]; then RES=4; FPS=3; fi
   grep -q "writeb 0xC06CC426 0x02" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=5; FPS=1; fi
   grep -q "writeb 0xC06CC426 0x00" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=6; FPS=1; fi
 
   grep -q "0x41A0" $AASH 2>/dev/null
-  if [ $? -eq 0 ]; then BIT=1; fi
+  if [ $? -eq 0 ]; then BIT="0x41A0"; fi
   grep -q "0x41C8" $AASH 2>/dev/null
-  if [ $? -eq 0 ]; then BIT=2; fi
+  if [ $? -eq 0 ]; then BIT="0x41C8"; fi
   grep -q "0x41F0" $AASH 2>/dev/null
-  if [ $? -eq 0 ]; then BIT=3; fi
+  if [ $? -eq 0 ]; then BIT="0x41F0"; fi
   grep -q "0x420C" $AASH 2>/dev/null
-  if [ $? -eq 0 ]; then BIT=4; fi
+  if [ $? -eq 0 ]; then BIT="0x420C"; fi
   grep -q "0x4220" $AASH 2>/dev/null
-  if [ $? -eq 0 ]; then BIT=5; fi
+  if [ $? -eq 0 ]; then BIT="0x4220"; fi
   grep -q "0x4234" $AASH 2>/dev/null
-  if [ $? -eq 0 ]; then BIT=6; fi
+  if [ $? -eq 0 ]; then BIT="0x4234"; fi
   grep -q "0x4248" $AASH 2>/dev/null
-  if [ $? -eq 0 ]; then BIT=7; fi
+  if [ $? -eq 0 ]; then BIT="0x4248"; fi
 
 
   grep -q "writew 0xC03A8520 0x2004" $AASH 2>/dev/null
@@ -555,7 +565,7 @@ setMissingValues ()
   if [[ "${INC_USER}" != ${XYC_Y} && "${INC_USER}" != ${XYC_N} ]]; then INC_USER=${XYC_N}; fi
   if [[ "$YIMAX" != ${XYC_Y} && "$YIMAX" != ${XYC_N} ]]; then YIMAX=${XYC_N}; fi
   if [[ "$SHADOW" != ${XYC_Y} && "$SHADOW" != ${XYC_N} ]]; then SHADOW=${XYC_N}; fi
-  if [ -z "$RES" ]; then RES=0; FPS=1; BIT=2; else setRESView; fi
+  if [ -z "$RES" ]; then RES=0; FPS=1; BIT="0x41C8"; else setRESView; fi
 }
 
 getExposureInput ()
@@ -853,9 +863,10 @@ getVideoFrequencyInput ()
   clear
   echo " ********* ${XYC_VIDEO_FREQUENCY} ********* "
   echo " * (1) 30 FPS                      * "
-  echo " * (2) 60 FPS                      * "
+  echo " * (2) 48 FPS                      * "
+  echo " * (3) 60 FPS                      * "
   if [ $RES -eq 1 ]; then 
-    echo " * (3) 120 FPS                     * "
+    echo " * (4) 120 FPS                     * "
   fi
   echo " *********************************** "
   local REPLY
@@ -866,8 +877,9 @@ getVideoFrequencyInput ()
   case $REPLY in 
     1) FPS=1;;
     2) FPS=2;;
-    3)  if [ $RES -eq 1 ]; then 
-          FPS=3 
+    3) FPS=3;;
+    4)  if [ $RES -eq 1 ]; then 
+          FPS=4 
         else 
           FPS=1 
         fi;;
@@ -886,9 +898,15 @@ getVideoBitrateInput ()
   echo " *********************************** "
   local REPLY
   read -p "${XYC_SELECT_OPTION}: " REPLY
-  if [ -n "$REPLY" ]; then 
-    BIT=$REPLY; 
-  fi
+  case $REPLY in 
+    1) BIT="0x41A0";;
+    2) BIT="0x41C8";;
+    3) BIT="0x41F0";;
+    4) BIT="0x420C";;
+    5) BIT="0x4220";;
+    6) BIT="0x4234";;
+    7) BIT="0x4248";;
+  esac
   setRESView
   if [ $RES -eq 6 ]; then
     showResolutionWarning
@@ -902,8 +920,10 @@ setRESView ()
     if [ $FPS -eq 1 ]; then 
       RESVIEW="$RESVIEW@30"
     elif [ $FPS -eq 2 ]; then 
-      RESVIEW="$RESVIEW@60"
+      RESVIEW="$RESVIEW@48"
     elif [ $FPS -eq 3 ]; then 
+      RESVIEW="$RESVIEW@60"
+    elif [ $FPS -eq 4 ]; then 
       RESVIEW="$RESVIEW@120"
     fi
   elif [ $RES -eq 2 ]; then 
@@ -911,6 +931,8 @@ setRESView ()
     if [ $FPS -eq 1 ]; then 
       RESVIEW="$RESVIEW@30"
     elif [ $FPS -eq 2 ]; then 
+      RESVIEW="$RESVIEW@48"
+    elif [ $FPS -eq 3 ]; then 
       RESVIEW="$RESVIEW@60"
     fi
   elif [ $RES -eq 3 ]; then 
@@ -918,6 +940,8 @@ setRESView ()
     if [ $FPS -eq 1 ]; then 
       RESVIEW="$RESVIEW@30"
     elif [ $FPS -eq 2 ]; then 
+      RESVIEW="$RESVIEW@48"
+    elif [ $FPS -eq 3 ]; then 
       RESVIEW="$RESVIEW@60"
     fi 
   elif [ $RES -eq 4 ]; then 
@@ -925,6 +949,8 @@ setRESView ()
     if [ $FPS -eq 1 ]; then 
       RESVIEW="$RESVIEW@30"
     elif [ $FPS -eq 2 ]; then 
+      RESVIEW="$RESVIEW@48"
+    elif [ $FPS -eq 3 ]; then 
       RESVIEW="$RESVIEW@60"
     fi
   elif [ $RES -eq 5 ]; then 
@@ -940,15 +966,21 @@ setRESView ()
   fi
 
   if [ $RES -ne 0 ]; then
-    case $BIT in 
-      1) RESVIEW="$RESVIEW 20Mb";;
-      2) RESVIEW="$RESVIEW 25Mb";;
-      3) RESVIEW="$RESVIEW 30Mb";;
-      4) RESVIEW="$RESVIEW 35Mb";;
-      5) RESVIEW="$RESVIEW 40Mb";;
-      6) RESVIEW="$RESVIEW 45Mb";;
-      7) RESVIEW="$RESVIEW 50Mb";;
-    esac
+    if [ "$BIT" == "0x41A0" ]; then
+      RESVIEW="$RESVIEW 20Mb"
+    elif [ "$BIT" == "0x41C8" ]; then
+      RESVIEW="$RESVIEW 25Mb"
+    elif [ "$BIT" == "0x41F0" ]; then
+      RESVIEW="$RESVIEW 30Mb"
+    elif [ "$BIT" == "0x420C" ]; then
+      RESVIEW="$RESVIEW 35Mb"
+    elif [ "$BIT" == "0x4220" ]; then
+      RESVIEW="$RESVIEW 40Mb"
+    elif [ "$BIT" == "0x4234" ]; then
+      RESVIEW="$RESVIEW 45Mb"
+    elif [ "$BIT" == "0x4248" ]; then
+      RESVIEW="$RESVIEW 50Mb"
+    fi
   fi
 }
 
@@ -1074,7 +1106,7 @@ writeAutoexec ()
 
   #Write any necessary script commands to autoexec.ash
   echo "#Script created `date`" > $OUTFILE
-  echo "#VideoResolution: $RES $FPS $BIT" >> $OUTFILE
+  echo "#VideoResolution: $RES $FPS" >> $OUTFILE
   echo "#CameraParams: $AWB $NR $YIMAX $SHADOW $BIG_FILE" >> $OUTFILE
   echo "#PhotoParams: $ISO $EXP $RAW" >> $OUTFILE
   echo "#Sharpness: $SHR $FIR $COR " >> $OUTFILE  
@@ -1148,369 +1180,69 @@ writeAutoexec ()
   fi
 
   if [ $RES -eq 1 ]; then
-    echo "#set video resolution to 1280x720" >> $OUTFILE
-    if [ $FPS -eq 1 ]; then #1280x720 30fps
-      echo "#set video frequency to 30fps" >> $OUTFILE
+    echo "#set video $RESVIEW" >> $OUTFILE
+    if [ $FPS -eq 1 ]; then                         #1280x720 30fps
       echo "writeb 0xC06CC426 0x11" >> $OUTFILE
-      if [ $BIT -eq 1 ]; then
-        echo "#set bitrate to 20Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2152 0x41A0" >> $OUTFILE
-      fi
-      if [ $BIT -eq 2 ]; then
-        echo "#set bitrate to 25Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2152 0x41C8" >> $OUTFILE
-      fi
-      if [ $BIT -eq 3 ]; then
-        echo "#set bitrate to 30Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2152 0x41F0" >> $OUTFILE
-      fi
-      if [ $BIT -eq 4 ]; then
-        echo "#set bitrate to 35Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2152 0x420C" >> $OUTFILE
-      fi
-      if [ $BIT -eq 5 ]; then
-        echo "#set bitrate to 40Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2152 0x4220" >> $OUTFILE
-      fi
-      if [ $BIT -eq 6 ]; then
-        echo "#set bitrate to 45Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2152 0x4234" >> $OUTFILE
-      fi
-      if [ $BIT -eq 7 ]; then
-        echo "#set bitrate to 50Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2152 0x4248" >> $OUTFILE
-      fi
-    elif [ $FPS -eq 2 ]; then #1280x720 60fps
-      echo "#set video frequency to 60fps" >> $OUTFILE
+      echo "writew 0xC05C2152 $BIT" >> $OUTFILE
+    elif [ $FPS -eq 2 ]; then                       #1280x720 48fps
+      echo "writeb 0xC06CC426 0x27" >> $OUTFILE
+      echo "writew 0xC05C25A2 $BIT" >> $OUTFILE
+    elif [ $FPS -eq 3 ]; then                       #1280x720 60fps
       echo "writeb 0xC06CC426 0x0F" >> $OUTFILE
-      if [ $BIT -eq 1 ]; then
-        echo "#set bitrate to 20Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2122 0x41A0" >> $OUTFILE
-      fi
-      if [ $BIT -eq 2 ]; then
-        echo "#set bitrate to 25Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2122 0x41C8" >> $OUTFILE
-      fi
-      if [ $BIT -eq 3 ]; then
-        echo "#set bitrate to 30Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2122 0x41F0" >> $OUTFILE
-      fi
-      if [ $BIT -eq 4 ]; then
-        echo "#set bitrate to 35Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2122 0x420C" >> $OUTFILE
-      fi
-      if [ $BIT -eq 5 ]; then
-        echo "#set bitrate to 40Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2122 0x4220" >> $OUTFILE
-      fi
-      if [ $BIT -eq 6 ]; then
-        echo "#set bitrate to 45Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2122 0x4234" >> $OUTFILE
-      fi
-      if [ $BIT -eq 7 ]; then
-        echo "#set bitrate to 50Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2122 0x4248" >> $OUTFILE
-      fi
-    elif [ $FPS -eq 3 ]; then #1280x720 120fps
-      echo "#set video frequency to 120fps" >> $OUTFILE
+      echo "writew 0xC05C2122 $BIT" >> $OUTFILE
+    elif [ $FPS -eq 4 ]; then                       #1280x720 120fps
       echo "writeb 0xC06CC426 0x34" >> $OUTFILE
-      if [ $BIT -eq 1 ]; then
-        echo "#set bitrate to 20Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2812 0x41A0" >> $OUTFILE
-      fi
-      if [ $BIT -eq 2 ]; then
-        echo "#set bitrate to 25Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2812 0x41C8" >> $OUTFILE
-      fi
-      if [ $BIT -eq 3 ]; then
-        echo "#set bitrate to 30Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2812 0x41F0" >> $OUTFILE
-      fi
-      if [ $BIT -eq 4 ]; then
-        echo "#set bitrate to 35Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2812 0x420C" >> $OUTFILE
-      fi
-      if [ $BIT -eq 5 ]; then
-        echo "#set bitrate to 40Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2812 0x4220" >> $OUTFILE
-      fi
-      if [ $BIT -eq 6 ]; then
-        echo "#set bitrate to 45Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2812 0x4234" >> $OUTFILE
-      fi
-      if [ $BIT -eq 7 ]; then
-        echo "#set bitrate to 50Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2812 0x4248" >> $OUTFILE
-      fi
+      echo "writew 0xC05C2812 $BIT" >> $OUTFILE
     fi
     echo "" >> $OUTFILE
   elif [ $RES -eq 2 ]; then
-    echo "#set video resolution to 1280x960" >> $OUTFILE
-    if [ $FPS -eq 1 ]; then #1280x960 30fps
-      echo "#set video frequency to 30fps" >> $OUTFILE
+    echo "#set video $RESVIEW" >> $OUTFILE
+    if [ $FPS -eq 1 ]; then                         #1280x960 30fps
       echo "writeb 0xC06CC426 0x17" >> $OUTFILE
-      if [ $BIT -eq 1 ]; then
-        echo "#set bitrate to 20Mb/s" >> $OUTFILE
-        echo "writew 0xC05C22A2 0x41A0" >> $OUTFILE
-      fi
-      if [ $BIT -eq 2 ]; then
-        echo "#set bitrate to 25Mb/s" >> $OUTFILE
-        echo "writew 0xC05C22A2 0x41C8" >> $OUTFILE
-      fi
-      if [ $BIT -eq 3 ]; then
-        echo "#set bitrate to 30Mb/s" >> $OUTFILE
-        echo "writew 0xC05C22A2 0x41F0" >> $OUTFILE
-      fi
-      if [ $BIT -eq 4 ]; then
-        echo "#set bitrate to 35Mb/s" >> $OUTFILE
-        echo "writew 0xC05C22A2 0x420C" >> $OUTFILE
-      fi
-      if [ $BIT -eq 5 ]; then
-        echo "#set bitrate to 40Mb/s" >> $OUTFILE
-        echo "writew 0xC05C22A2 0x4220" >> $OUTFILE
-      fi
-      if [ $BIT -eq 6 ]; then
-        echo "#set bitrate to 45Mb/s" >> $OUTFILE
-        echo "writew 0xC05C22A2 0x4234" >> $OUTFILE
-      fi
-      if [ $BIT -eq 7 ]; then
-        echo "#set bitrate to 50Mb/s" >> $OUTFILE
-        echo "writew 0xC05C22A2 0x4248" >> $OUTFILE
-      fi
-    elif [ $FPS -eq 2 ]; then #1280x960 60fps
-      echo "#set video frequency to 60fps" >> $OUTFILE
+      echo "writew 0xC05C22A2 $BIT" >> $OUTFILE
+    elif [ $FPS -eq 2 ]; then                       #1280x960 48fps
+      echo "writeb 0xC06CC426 0x25" >> $OUTFILE
+      echo "writew 0xC05C2542 $BIT" >> $OUTFILE
+    elif [ $FPS -eq 3 ]; then                       #1280x960 60fps
       echo "writeb 0xC06CC426 0x16" >> $OUTFILE
-      if [ $BIT -eq 1 ]; then
-        echo "#set bitrate to 20Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2272 0x41A0" >> $OUTFILE
-      fi
-      if [ $BIT -eq 2 ]; then
-        echo "#set bitrate to 25Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2272 0x41C8" >> $OUTFILE
-      fi
-      if [ $BIT -eq 3 ]; then
-        echo "#set bitrate to 30Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2272 0x41F0" >> $OUTFILE
-      fi
-      if [ $BIT -eq 4 ]; then
-        echo "#set bitrate to 35Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2272 0x420C" >> $OUTFILE
-      fi
-      if [ $BIT -eq 5 ]; then
-        echo "#set bitrate to 40Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2272 0x4220" >> $OUTFILE
-      fi
-      if [ $BIT -eq 6 ]; then
-        echo "#set bitrate to 45Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2272 0x4234" >> $OUTFILE
-      fi
-      if [ $BIT -eq 7 ]; then
-        echo "#set bitrate to 50Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2272 0x4248" >> $OUTFILE
-      fi
+      echo "writew 0xC05C2272 $BIT" >> $OUTFILE
     fi
     echo "" >> $OUTFILE
   elif [ $RES -eq 3 ]; then
-    echo "#set video resolution to 1600x1200" >> $OUTFILE
-    if [ $FPS -eq 1 ]; then #1600x1200 30fps
-      echo "#set video frequency to 30fps" >> $OUTFILE
+    echo "#set video $RESVIEW" >> $OUTFILE
+    if [ $FPS -eq 1 ]; then                         #1600x1200 30fps
       echo "writeb 0xC06CC426 0x0D" >> $OUTFILE
-      if [ $BIT -eq 1 ]; then
-        echo "#set bitrate to 20Mb/s" >> $OUTFILE
-        echo "writew 0xC05C20C2 0x41A0" >> $OUTFILE
-      fi
-      if [ $BIT -eq 2 ]; then
-        echo "#set bitrate to 25Mb/s" >> $OUTFILE
-        echo "writew 0xC05C20C2 0x41C8" >> $OUTFILE
-      fi
-      if [ $BIT -eq 3 ]; then
-        echo "#set bitrate to 30Mb/s" >> $OUTFILE
-        echo "writew 0xC05C20C2 0x41F0" >> $OUTFILE
-      fi
-      if [ $BIT -eq 4 ]; then
-        echo "#set bitrate to 35Mb/s" >> $OUTFILE
-        echo "writew 0xC05C20C2 0x420C" >> $OUTFILE
-      fi
-      if [ $BIT -eq 5 ]; then
-        echo "#set bitrate to 40Mb/s" >> $OUTFILE
-        echo "writew 0xC05C20C2 0x4220" >> $OUTFILE
-      fi
-      if [ $BIT -eq 6 ]; then
-        echo "#set bitrate to 45Mb/s" >> $OUTFILE
-        echo "writew 0xC05C20C2 0x4234" >> $OUTFILE
-      fi
-      if [ $BIT -eq 7 ]; then
-        echo "#set bitrate to 50Mb/s" >> $OUTFILE
-        echo "writew 0xC05C20C2 0x4248" >> $OUTFILE
-      fi
-    elif [ $FPS -eq 2 ]; then #1600x1200 60fps
-      echo "#set video frequency to 60fps" >> $OUTFILE
+      echo "writew 0xC05C20C2 $BIT" >> $OUTFILE
+    elif [ $FPS -eq 2 ]; then                       #1600x1200 48fps
+      echo "writeb 0xC06CC426 0x23" >> $OUTFILE
+      echo "writew 0xC05C24E2 $BIT" >> $OUTFILE
+    elif [ $FPS -eq 3 ]; then                       #1600x1200 60fps
       echo "writeb 0xC06CC426 0x0C" >> $OUTFILE
-      if [ $BIT -eq 1 ]; then
-        echo "#set bitrate to 20Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2092 0x41A0" >> $OUTFILE
-      fi
-      if [ $BIT -eq 2 ]; then
-        echo "#set bitrate to 25Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2092 0x41C8" >> $OUTFILE
-      fi
-      if [ $BIT -eq 3 ]; then
-        echo "#set bitrate to 30Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2092 0x41F0" >> $OUTFILE
-      fi
-      if [ $BIT -eq 4 ]; then
-        echo "#set bitrate to 35Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2092 0x420C" >> $OUTFILE
-      fi
-      if [ $BIT -eq 5 ]; then
-        echo "#set bitrate to 40Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2092 0x4220" >> $OUTFILE
-      fi
-      if [ $BIT -eq 6 ]; then
-        echo "#set bitrate to 45Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2092 0x4234" >> $OUTFILE
-      fi
-      if [ $BIT -eq 7 ]; then
-        echo "#set bitrate to 50Mb/s" >> $OUTFILE
-        echo "writew 0xC05C2092 0x4248" >> $OUTFILE
-      fi
+      echo "writew 0xC05C2092 $BIT" >> $OUTFILE
     fi
     echo "" >> $OUTFILE
   elif [ $RES -eq 4 ]; then
-    echo "#set video resolution to 1920x1080" >> $OUTFILE
-    if [ $FPS -eq 1 ]; then #1920x1080 30fps
-      echo "#set video frequency to 30fps" >> $OUTFILE
+    echo "#set video $RESVIEW" >> $OUTFILE
+    if [ $FPS -eq 1 ]; then                         #1920x1080 30fps
       echo "writeb 0xC06CC426 0x06" >> $OUTFILE
-      if [ $BIT -eq 1 ]; then
-        echo "#set bitrate to 20Mb/s" >> $OUTFILE
-        echo "writew 0xC05C1F72 0x41A0" >> $OUTFILE
-      fi
-      if [ $BIT -eq 2 ]; then
-        echo "#set bitrate to 25Mb/s" >> $OUTFILE
-        echo "writew 0xC05C1F72 0x41C8" >> $OUTFILE
-      fi
-      if [ $BIT -eq 3 ]; then
-        echo "#set bitrate to 30Mb/s" >> $OUTFILE
-        echo "writew 0xC05C1F72 0x41F0" >> $OUTFILE
-      fi
-      if [ $BIT -eq 4 ]; then
-        echo "#set bitrate to 35Mb/s" >> $OUTFILE
-        echo "writew 0xC05C1F72 0x420C" >> $OUTFILE
-      fi
-      if [ $BIT -eq 5 ]; then
-        echo "#set bitrate to 40Mb/s" >> $OUTFILE
-        echo "writew 0xC05C1F72 0x4220" >> $OUTFILE
-      fi
-      if [ $BIT -eq 6 ]; then
-        echo "#set bitrate to 45Mb/s" >> $OUTFILE
-        echo "writew 0xC05C1F72 0x4234" >> $OUTFILE
-      fi
-      if [ $BIT -eq 7 ]; then
-        echo "#set bitrate to 50Mb/s" >> $OUTFILE
-        echo "writew 0xC05C1F72 0x4248" >> $OUTFILE
-      fi
-    elif [ $FPS -eq 2 ]; then #1920x1080 60fps
-      echo "#set video frequency to 60fps" >> $OUTFILE
+      echo "writew 0xC05C1F72 $BIT" >> $OUTFILE
+    elif [ $FPS -eq 2 ]; then                       #1920x1080 48fps
+      echo "writeb 0xC06CC426 0x20" >> $OUTFILE
+      echo "writew 0xC05C2452 $BIT" >> $OUTFILE
+    elif [ $FPS -eq 3 ]; then                       #1920x1080 60fps
       echo "writeb 0xC06CC426 0x03" >> $OUTFILE
-      if [ $BIT -eq 1 ]; then
-        echo "#set bitrate to 20Mb/s" >> $OUTFILE
-        echo "writew 0xC05C1EE2 0x41A0" >> $OUTFILE
-      fi
-      if [ $BIT -eq 2 ]; then
-        echo "#set bitrate to 25Mb/s" >> $OUTFILE
-        echo "writew 0xC05C1EE2 0x41C8" >> $OUTFILE
-      fi
-      if [ $BIT -eq 3 ]; then
-        echo "#set bitrate to 30Mb/s" >> $OUTFILE
-        echo "writew 0xC05C1EE2 0x41F0" >> $OUTFILE
-      fi
-      if [ $BIT -eq 4 ]; then
-        echo "#set bitrate to 35Mb/s" >> $OUTFILE
-        echo "writew 0xC05C1EE2 0x420C" >> $OUTFILE
-      fi
-      if [ $BIT -eq 5 ]; then
-        echo "#set bitrate to 40Mb/s" >> $OUTFILE
-        echo "writew 0xC05C1EE2 0x4220" >> $OUTFILE
-      fi
-      if [ $BIT -eq 6 ]; then
-        echo "#set bitrate to 45Mb/s" >> $OUTFILE
-        echo "writew 0xC05C1EE2 0x4234" >> $OUTFILE
-      fi
-      if [ $BIT -eq 7 ]; then
-        echo "#set bitrate to 50Mb/s" >> $OUTFILE
-        echo "writew 0xC05C1EE2 0x4248" >> $OUTFILE
-      fi
+      echo "writew 0xC05C1EE2 $BIT" >> $OUTFILE
     fi
     echo "" >> $OUTFILE
-  elif [ $RES -eq 5 ]; then
-    echo "#set video resolution to 2304x1296" >> $OUTFILE
-    if [ $FPS -eq 1 ]; then #2304x1296 30fps
-      echo "#set video frequency to 30fps" >> $OUTFILE
-      echo "writeb 0xC06CC426 0x02" >> $OUTFILE
-      if [ $BIT -eq 1 ]; then
-        echo "#set bitrate to 20Mb/s" >> $OUTFILE
-        echo "writew 0xC05C1EB2 0x41A0" >> $OUTFILE
-      fi
-      if [ $BIT -eq 2 ]; then
-        echo "#set bitrate to 25Mb/s" >> $OUTFILE
-        echo "writew 0xC05C1EB2 0x41C8" >> $OUTFILE
-      fi
-      if [ $BIT -eq 3 ]; then
-        echo "#set bitrate to 30Mb/s" >> $OUTFILE
-        echo "writew 0xC05C1EB2 0x41F0" >> $OUTFILE
-      fi
-      if [ $BIT -eq 4 ]; then
-        echo "#set bitrate to 35Mb/s" >> $OUTFILE
-        echo "writew 0xC05C1EB2 0x420C" >> $OUTFILE
-      fi
-      if [ $BIT -eq 5 ]; then
-        echo "#set bitrate to 40Mb/s" >> $OUTFILE
-        echo "writew 0xC05C1EB2 0x4220" >> $OUTFILE
-      fi
-      if [ $BIT -eq 6 ]; then
-        echo "#set bitrate to 45Mb/s" >> $OUTFILE
-        echo "writew 0xC05C1EB2 0x4234" >> $OUTFILE
-      fi
-      if [ $BIT -eq 7 ]; then
-        echo "#set bitrate to 50Mb/s" >> $OUTFILE
-        echo "writew 0xC05C1EB2 0x4248" >> $OUTFILE
-      fi
-    fi
+  elif [[ $RES -eq 5 && $FPS -eq 1 ]]; then         #2304x1296 30fps
+    echo "#set video $RESVIEW" >> $OUTFILE
+    echo "writeb 0xC06CC426 0x02" >> $OUTFILE
+    echo "writew 0xC05C1EB2 $BIT" >> $OUTFILE
     echo "" >> $OUTFILE
-  elif [ $RES -eq 6 ]; then
-    echo "#set video resolution to 2560x1440" >> $OUTFILE
-    if [ $FPS -eq 1 ]; then #2560x1440 30fps
-      echo "#set video frequency to 30fps" >> $OUTFILE
-      echo "writeb 0xC06CC426 0x00" >> $OUTFILE
-      if [ $BIT -eq 1 ]; then
-        echo "#set bitrate to 20Mb/s" >> $OUTFILE
-        echo "writew 0xC05C1E52 0x41A0" >> $OUTFILE
-      fi
-      if [ $BIT -eq 2 ]; then
-        echo "#set bitrate to 25Mb/s" >> $OUTFILE
-        echo "writew 0xC05C1E52 0x41C8" >> $OUTFILE
-      fi
-      if [ $BIT -eq 3 ]; then
-        echo "#set bitrate to 30Mb/s" >> $OUTFILE
-        echo "writew 0xC05C1E52 0x41F0" >> $OUTFILE
-      fi
-      if [ $BIT -eq 4 ]; then
-        echo "#set bitrate to 35Mb/s" >> $OUTFILE
-        echo "writew 0xC05C1E52 0x420C" >> $OUTFILE
-      fi
-      if [ $BIT -eq 5 ]; then
-        echo "#set bitrate to 40Mb/s" >> $OUTFILE
-        echo "writew 0xC05C1E52 0x4220" >> $OUTFILE
-      fi
-      if [ $BIT -eq 6 ]; then
-        echo "#set bitrate to 45Mb/s" >> $OUTFILE
-        echo "writew 0xC05C1E52 0x4234" >> $OUTFILE
-      fi
-      if [ $BIT -eq 7 ]; then
-        echo "#set bitrate to 50Mb/s" >> $OUTFILE
-        echo "writew 0xC05C1E52 0x4248" >> $OUTFILE
-      fi
-    fi
+  elif [[ $RES -eq 6 && $FPS -eq 1 ]]; then         #2560x1440 30fps
+    echo "#set video $RESVIEW" >> $OUTFILE
+    echo "writeb 0xC06CC426 0x00" >> $OUTFILE
+    echo "writew 0xC05C1E52 $BIT" >> $OUTFILE
     echo "" >> $OUTFILE
   fi
 
