@@ -33,8 +33,9 @@
 #
 # Changelog:
 #
-# 0.3.4 (Nov 2015) - Support for 48fps video 
-# by Alex          - Increase script performance
+# 0.3.4 (Nov 2015) - Support for 24fps and 48fps video 
+# by Alex          - Fixed 2560x1440 resolution, now it's upscaling from 2304x1296 
+#                  - Increase script performance
 # 0.3.3 (Oct 2015) - Support latest 1.2.13 firmware
 # by Alex          - Added support file weight limit to 4GB
 #                  - Added 1440p resolution for test purpose
@@ -196,7 +197,7 @@ welcome ()
   clear
   echo ""
   echo " *  Xiaomi Yi Configurator  * "
-  echo " *  11/14/2015  ${VERS}  * "
+  echo " *  11/25/2015  ${VERS}  * "
   echo ""
 }
 
@@ -493,36 +494,44 @@ parseExistingAutoexec ()
   grep -q "t ia2 -adj autoknee" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then SHADOW=${XYC_Y}; fi
 
-  grep -q "writeb 0xC06CC426 0x11" $AASH 2>/dev/null
+  grep -q "writeb 0xC06CC426 0x28" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=1; FPS=1; fi
-  grep -q "writeb 0xC06CC426 0x27" $AASH 2>/dev/null
+  grep -q "writeb 0xC06CC426 0x11" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=1; FPS=2; fi
-  grep -q "writeb 0xC06CC426 0x0F" $AASH 2>/dev/null
+  grep -q "writeb 0xC06CC426 0x27" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=1; FPS=3; fi
-  grep -q "writeb 0xC06CC426 0x34" $AASH 2>/dev/null
+  grep -q "writeb 0xC06CC426 0x0F" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=1; FPS=4; fi
-  grep -q "writeb 0xC06CC426 0x17" $AASH 2>/dev/null
+  grep -q "writeb 0xC06CC426 0x34" $AASH 2>/dev/null
+  if [ $? -eq 0 ]; then RES=1; FPS=5; fi
+  grep -q "writeb 0xC06CC426 0x26" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=2; FPS=1; fi
-  grep -q "writeb 0xC06CC426 0x25" $AASH 2>/dev/null
+  grep -q "writeb 0xC06CC426 0x17" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=2; FPS=2; fi
-  grep -q "writeb 0xC06CC426 0x16" $AASH 2>/dev/null
+  grep -q "writeb 0xC06CC426 0x25" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=2; FPS=3; fi
-  grep -q "writeb 0xC06CC426 0x0D" $AASH 2>/dev/null
+  grep -q "writeb 0xC06CC426 0x16" $AASH 2>/dev/null
+  if [ $? -eq 0 ]; then RES=2; FPS=4; fi
+  grep -q "writeb 0xC06CC426 0x24" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=3; FPS=1; fi
-  grep -q "writeb 0xC06CC426 0x23" $AASH 2>/dev/null
+  grep -q "writeb 0xC06CC426 0x0D" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=3; FPS=2; fi
-  grep -q "writeb 0xC06CC426 0x0C" $AASH 2>/dev/null
+  grep -q "writeb 0xC06CC426 0x23" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=3; FPS=3; fi
-  grep -q "writeb 0xC06CC426 0x06" $AASH 2>/dev/null
+  grep -q "writeb 0xC06CC426 0x0C" $AASH 2>/dev/null
+  if [ $? -eq 0 ]; then RES=3; FPS=4; fi
+  grep -q "writeb 0xC06CC426 0x21" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=4; FPS=1; fi
-  grep -q "writeb 0xC06CC426 0x20" $AASH 2>/dev/null
+  grep -q "writeb 0xC06CC426 0x06" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=4; FPS=2; fi
-  grep -q "writeb 0xC06CC426 0x03" $AASH 2>/dev/null
+  grep -q "writeb 0xC06CC426 0x20" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=4; FPS=3; fi
-  grep -q "writeb 0xC06CC426 0x02" $AASH 2>/dev/null
-  if [ $? -eq 0 ]; then RES=5; FPS=1; fi
-  grep -q "writeb 0xC06CC426 0x00" $AASH 2>/dev/null
-  if [ $? -eq 0 ]; then RES=6; FPS=1; fi
+  grep -q "writeb 0xC06CC426 0x03" $AASH 2>/dev/null
+  if [ $? -eq 0 ]; then RES=4; FPS=4; fi
+  grep -q "writel 0xC05C2CB4 0x05100900" $AASH 2>/dev/null
+  if [ $? -eq 0 ]; then RES=5; FPS=2; fi
+  grep -q "writel 0xC05C2CB4 0x05A00A00" $AASH 2>/dev/null
+  if [ $? -eq 0 ]; then RES=6; FPS=2; fi
 
   grep -q "0x41A0" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then BIT="0x41A0"; fi
@@ -565,7 +574,7 @@ setMissingValues ()
   if [[ "${INC_USER}" != ${XYC_Y} && "${INC_USER}" != ${XYC_N} ]]; then INC_USER=${XYC_N}; fi
   if [[ "$YIMAX" != ${XYC_Y} && "$YIMAX" != ${XYC_N} ]]; then YIMAX=${XYC_N}; fi
   if [[ "$SHADOW" != ${XYC_Y} && "$SHADOW" != ${XYC_N} ]]; then SHADOW=${XYC_N}; fi
-  if [ -z "$RES" ]; then RES=0; FPS=1; BIT="0x41C8"; else setRESView; fi
+  if [ -z "$RES" ]; then RES=0; FPS=2; BIT="0x41C8"; else setRESView; fi
 }
 
 getExposureInput ()
@@ -851,10 +860,10 @@ getVideoInput ()
     5) RES=5;;
     6) RES=6;;
   esac
-  if [[ $RES -eq 5 || $RES -eq 6 ]]; then
-    FPS=1; getVideoBitrateInput
+  if [ $RES -ge 5 ]; then
+    FPS=2; getVideoBitrateInput  
   else
-    getVideoFrequencyInput
+    getVideoFrequencyInput  
   fi
 }
 
@@ -862,11 +871,12 @@ getVideoFrequencyInput ()
 {
   clear
   echo " ********* ${XYC_VIDEO_FREQUENCY} ********* "
-  echo " * (1) 30 FPS                      * "
-  echo " * (2) 48 FPS                      * "
-  echo " * (3) 60 FPS                      * "
+  echo " * (1) 24 FPS                      * "
+  echo " * (2) 30 FPS                      * "
+  echo " * (3) 48 FPS                      * "
+  echo " * (4) 60 FPS                      * "
   if [ $RES -eq 1 ]; then 
-    echo " * (4) 120 FPS                     * "
+    echo " * (5) 120 FPS                     * "
   fi
   echo " *********************************** "
   local REPLY
@@ -878,10 +888,11 @@ getVideoFrequencyInput ()
     1) FPS=1;;
     2) FPS=2;;
     3) FPS=3;;
-    4)  if [ $RES -eq 1 ]; then 
-          FPS=4 
+    4) FPS=4;;
+    5)  if [ $RES -eq 1 ]; then 
+          FPS=5 
         else 
-          FPS=1 
+          FPS=2 
         fi;;
   esac
   getVideoBitrateInput
@@ -908,9 +919,6 @@ getVideoBitrateInput ()
     7) BIT="0x4248";;
   esac
   setRESView
-  if [ $RES -eq 6 ]; then
-    showResolutionWarning
-  fi
 }
 
 setRESView ()
@@ -918,49 +926,57 @@ setRESView ()
   if [ $RES -eq 1 ]; then 
     RESVIEW="720p" 
     if [ $FPS -eq 1 ]; then 
-      RESVIEW="$RESVIEW@30"
+      RESVIEW="$RESVIEW@24"
     elif [ $FPS -eq 2 ]; then 
-      RESVIEW="$RESVIEW@48"
+      RESVIEW="$RESVIEW@30"
     elif [ $FPS -eq 3 ]; then 
-      RESVIEW="$RESVIEW@60"
+      RESVIEW="$RESVIEW@48"
     elif [ $FPS -eq 4 ]; then 
+      RESVIEW="$RESVIEW@60"
+    elif [ $FPS -eq 5 ]; then 
       RESVIEW="$RESVIEW@120"
     fi
   elif [ $RES -eq 2 ]; then 
     RESVIEW="960p" 
     if [ $FPS -eq 1 ]; then 
-      RESVIEW="$RESVIEW@30"
+      RESVIEW="$RESVIEW@24"
     elif [ $FPS -eq 2 ]; then 
-      RESVIEW="$RESVIEW@48"
+      RESVIEW="$RESVIEW@30"
     elif [ $FPS -eq 3 ]; then 
+      RESVIEW="$RESVIEW@48"
+    elif [ $FPS -eq 4 ]; then 
       RESVIEW="$RESVIEW@60"
     fi
   elif [ $RES -eq 3 ]; then 
     RESVIEW="HD" 
     if [ $FPS -eq 1 ]; then 
-      RESVIEW="$RESVIEW@30"
+      RESVIEW="$RESVIEW@24"
     elif [ $FPS -eq 2 ]; then 
-      RESVIEW="$RESVIEW@48"
+      RESVIEW="$RESVIEW@30"
     elif [ $FPS -eq 3 ]; then 
+      RESVIEW="$RESVIEW@48"
+    elif [ $FPS -eq 4 ]; then 
       RESVIEW="$RESVIEW@60"
-    fi 
+    fi  
   elif [ $RES -eq 4 ]; then 
     RESVIEW="1080p" 
     if [ $FPS -eq 1 ]; then 
-      RESVIEW="$RESVIEW@30"
+      RESVIEW="$RESVIEW@24"
     elif [ $FPS -eq 2 ]; then 
-      RESVIEW="$RESVIEW@48"
+      RESVIEW="$RESVIEW@30"
     elif [ $FPS -eq 3 ]; then 
+      RESVIEW="$RESVIEW@48"
+    elif [ $FPS -eq 4 ]; then 
       RESVIEW="$RESVIEW@60"
     fi
   elif [ $RES -eq 5 ]; then 
     RESVIEW="1296p"
-    if [ $FPS -eq 1 ]; then 
+    if [ $FPS -eq 2 ]; then 
       RESVIEW="$RESVIEW@30"
     fi
   elif [ $RES -eq 6 ]; then 
     RESVIEW="1440p"
-    if [ $FPS -eq 1 ]; then 
+    if [ $FPS -eq 2 ]; then 
       RESVIEW="$RESVIEW@30"
     fi
   fi
@@ -982,19 +998,6 @@ setRESView ()
       RESVIEW="$RESVIEW 50Mb"
     fi
   fi
-}
-
-showResolutionWarning ()
-{
-  clear  
-  echo " ******* ${XYC_RESOLUTION_WARNING} ******** "
-  echo " In case of not supported resolution "
-  echo " or bitrate the camera could freeze "
-  echo " or have continuous restart. "
-  echo " If you have this issue delete "
-  echo " autoexec.ash directly from SD card. "
-  echo ""
-  read -p " Press ${XYC_ENTER} to continue:" REPLY
 }
 
 getBigFileInput ()
@@ -1181,68 +1184,103 @@ writeAutoexec ()
 
   if [ $RES -eq 1 ]; then
     echo "#set video $RESVIEW" >> $OUTFILE
-    if [ $FPS -eq 1 ]; then                         #1280x720 30fps
+    if [ $FPS -eq 1 ]; then                         #1280x720 24fps
+      echo "writeb 0xC06CC426 0x28" >> $OUTFILE
+      echo "writel 0xC05C2FAC 0x02D00500" >> $OUTFILE
+      echo "writew 0xC05C25D2 $BIT" >> $OUTFILE
+    elif [ $FPS -eq 2 ]; then                       #1280x720 30fps
       echo "writeb 0xC06CC426 0x11" >> $OUTFILE
-      echo "writew 0xC05C2152 $BIT" >> $OUTFILE
-    elif [ $FPS -eq 2 ]; then                       #1280x720 48fps
+      echo "writel 0xC05C2DE0 0x02D00500" >> $OUTFILE
+      echo "writew 0xC05C2182 $BIT" >> $OUTFILE
+    elif [ $FPS -eq 3 ]; then                       #1280x720 48fps
       echo "writeb 0xC06CC426 0x27" >> $OUTFILE
+      echo "writel 0xC05C2F98 0x02D00500" >> $OUTFILE
       echo "writew 0xC05C25A2 $BIT" >> $OUTFILE
-    elif [ $FPS -eq 3 ]; then                       #1280x720 60fps
+    elif [ $FPS -eq 4 ]; then                       #1280x720 60fps
       echo "writeb 0xC06CC426 0x0F" >> $OUTFILE
+      echo "writel 0xC05C2DB8 0x02D00500" >> $OUTFILE
       echo "writew 0xC05C2122 $BIT" >> $OUTFILE
-    elif [ $FPS -eq 4 ]; then                       #1280x720 120fps
+    elif [ $FPS -eq 5 ]; then                       #1280x720 120fps
       echo "writeb 0xC06CC426 0x34" >> $OUTFILE
+      echo "writel 0xC05C309C 0x02D00500" >> $OUTFILE
       echo "writew 0xC05C2812 $BIT" >> $OUTFILE
     fi
     echo "" >> $OUTFILE
   elif [ $RES -eq 2 ]; then
     echo "#set video $RESVIEW" >> $OUTFILE
-    if [ $FPS -eq 1 ]; then                         #1280x960 30fps
+    if [ $FPS -eq 1 ]; then                         #1280x960 24fps
+      echo "writeb 0xC06CC426 0x26" >> $OUTFILE
+      echo "writel 0xC05C2F84 0x03C00500" >> $OUTFILE
+      echo "writew 0xC05C2572 $BIT" >> $OUTFILE
+    elif [ $FPS -eq 2 ]; then                       #1280x960 30fps
       echo "writeb 0xC06CC426 0x17" >> $OUTFILE
+      echo "writel 0xC05C2E58 0x03C00500" >> $OUTFILE
       echo "writew 0xC05C22A2 $BIT" >> $OUTFILE
-    elif [ $FPS -eq 2 ]; then                       #1280x960 48fps
+    elif [ $FPS -eq 3 ]; then                       #1280x960 48fps
       echo "writeb 0xC06CC426 0x25" >> $OUTFILE
+      echo "writel 0xC05C2F70 0x03C00500" >> $OUTFILE
       echo "writew 0xC05C2542 $BIT" >> $OUTFILE
-    elif [ $FPS -eq 3 ]; then                       #1280x960 60fps
+    elif [ $FPS -eq 4 ]; then                       #1280x960 60fps
       echo "writeb 0xC06CC426 0x16" >> $OUTFILE
+      echo "writel 0xC05C2E44 0x03C00500" >> $OUTFILE     
       echo "writew 0xC05C2272 $BIT" >> $OUTFILE
     fi
     echo "" >> $OUTFILE
   elif [ $RES -eq 3 ]; then
     echo "#set video $RESVIEW" >> $OUTFILE
-    if [ $FPS -eq 1 ]; then                         #1600x1200 30fps
+    if [ $FPS -eq 1 ]; then                         #1600x1200 24fps
+      echo "writeb 0xC06CC426 0x24" >> $OUTFILE
+      echo "writel 0xC05C2F5C 0x04B00640" >> $OUTFILE      
+      echo "writew 0xC05C2512 $BIT" >> $OUTFILE
+    elif [ $FPS -eq 2 ]; then                       #1600x1200 30fps
       echo "writeb 0xC06CC426 0x0D" >> $OUTFILE
+      echo "writel 0xC05C2D90 0x04B00640" >> $OUTFILE    
       echo "writew 0xC05C20C2 $BIT" >> $OUTFILE
-    elif [ $FPS -eq 2 ]; then                       #1600x1200 48fps
+    elif [ $FPS -eq 3 ]; then                       #1600x1200 48fps
       echo "writeb 0xC06CC426 0x23" >> $OUTFILE
+      echo "writel 0xC05C2F48 0x04B00640" >> $OUTFILE      
       echo "writew 0xC05C24E2 $BIT" >> $OUTFILE
-    elif [ $FPS -eq 3 ]; then                       #1600x1200 60fps
+    elif [ $FPS -eq 4 ]; then                       #1600x1200 60fps
       echo "writeb 0xC06CC426 0x0C" >> $OUTFILE
+      echo "writel 0xC05C2D7C 0x04B00640" >> $OUTFILE    
       echo "writew 0xC05C2092 $BIT" >> $OUTFILE
     fi
     echo "" >> $OUTFILE
   elif [ $RES -eq 4 ]; then
     echo "#set video $RESVIEW" >> $OUTFILE
-    if [ $FPS -eq 1 ]; then                         #1920x1080 30fps
+    if [ $FPS -eq 1 ]; then                         #1920x1080 24fps
+      echo "writeb 0xC06CC426 0x21" >> $OUTFILE
+      echo "writel 0xC05C2F20 0x04380780" >> $OUTFILE
+      echo "writew 0xC05C2482 $BIT" >> $OUTFILE
+    elif [ $FPS -eq 2 ]; then                       #1920x1080 30fps
       echo "writeb 0xC06CC426 0x06" >> $OUTFILE
+      echo "writel 0xC05C2D04 0x04380780" >> $OUTFILE
       echo "writew 0xC05C1F72 $BIT" >> $OUTFILE
-    elif [ $FPS -eq 2 ]; then                       #1920x1080 48fps
+    elif [ $FPS -eq 3 ]; then                       #1920x1080 48fps
       echo "writeb 0xC06CC426 0x20" >> $OUTFILE
+      echo "writel 0xC05C2F0C 0x04380780" >> $OUTFILE
       echo "writew 0xC05C2452 $BIT" >> $OUTFILE
-    elif [ $FPS -eq 3 ]; then                       #1920x1080 60fps
+    elif [ $FPS -eq 4 ]; then                       #1920x1080 60fps
       echo "writeb 0xC06CC426 0x03" >> $OUTFILE
+      echo "writel 0xC05C2CC8 0x04380780" >> $OUTFILE
       echo "writew 0xC05C1EE2 $BIT" >> $OUTFILE
     fi
     echo "" >> $OUTFILE
-  elif [[ $RES -eq 5 && $FPS -eq 1 ]]; then         #2304x1296 30fps
+  elif [ $RES -eq 5 ]; then
     echo "#set video $RESVIEW" >> $OUTFILE
-    echo "writeb 0xC06CC426 0x02" >> $OUTFILE
-    echo "writew 0xC05C1EB2 $BIT" >> $OUTFILE
+    if [ $FPS -eq 2 ]; then                       #2304x1296 30fps                         
+      echo "writeb 0xC06CC426 0x02" >> $OUTFILE
+      echo "writel 0xC05C2CB4 0x05100900" >> $OUTFILE
+      echo "writew 0xC05C1EB2 $BIT" >> $OUTFILE
+    fi
     echo "" >> $OUTFILE
-  elif [[ $RES -eq 6 && $FPS -eq 1 ]]; then         #2560x1440 30fps
+  elif [ $RES -eq 6 ]; then
     echo "#set video $RESVIEW" >> $OUTFILE
-    echo "writeb 0xC06CC426 0x00" >> $OUTFILE
-    echo "writew 0xC05C1E52 $BIT" >> $OUTFILE
+    if [ $FPS -eq 2 ]; then                       #2560x1440 30fps  
+      echo "writeb 0xC06CC426 0x02" >> $OUTFILE
+      echo "writel 0xC05C2CB4 0x05A00A00" >> $OUTFILE
+      echo "writew 0xC05C1EB2 $BIT" >> $OUTFILE
+    fi
     echo "" >> $OUTFILE
   fi
 
