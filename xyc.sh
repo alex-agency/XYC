@@ -112,7 +112,6 @@ XYC_AWB="AWB"
 XYC_CREATE_RAW="Create RAW"
 XYC_RAW="RAW"
 XYC_NR="NR"
-XYC_IMPORT_USER_SETTINGS="Import additional settings from"
 XYC_YES="Yes"
 XYC_NO="No"
 XYC_Y="y"
@@ -128,13 +127,13 @@ XYC_RESTART_NOW_PROMPT="Restart camera now (y/n)"
 XYC_REBOOTING_NOW="Rebooting now"
 XYC_WRITING="Writing"
 XYC_DELETING="Deleting"
-XYC_CREATE_HDR="Create/Run HDR script"
+XYC_CREATE_HDR="View/Edit HDR settings"
 XYC_CAMERA_SETTINGS_MENU="Camera Settings Menu"
-XYC_INCLUDE_USER_SETTINGS_PROMPT="Import additional settings from autoexec.xyc (y/n)"
+XYC_INCLUDE_USER_SETTINGS_PROMPT="Import settings from autoexec.xyc (y/n)"
 XYC_HDR_MENU="HDR Settings Menu"
 XYC_CANNOT_READ="WARNING: Cannot read/access"
 XYC_YIMAX_MOVIE="YiMax Movie"
-XYC_USER_IMPORT="User Import"
+XYC_USER_IMPORT="Import User settings"
 XYC_YIMAX_PROMPT="YiMax Image Optimization (y/n)"
 XYC_EXPOSURE_MENU="Exposure Setting"
 XYC_ISO_MENU="ISO Setting"
@@ -146,7 +145,7 @@ XYC_HDR="HDR"
 XYC_HDR_AUTO_DAY="HDR Auto"
 XYC_HDR_AUTO_NIGHT="HDR Auto Night"
 XYC_HDR_ADVANCED="HDR Advanced"
-XYC_HDR_RESET="Delete HDR"
+XYC_HDR_RESET="Reset/Delete HDR"
 XYC_HDR_EXPOSURE="HDR picture Exposure"
 XYC_THIRD="Third"
 XYC_SECOND="Second"
@@ -187,6 +186,7 @@ XYC_NO_INTERNET="You don't have internet connection."
 XYC_UPDATE_ERROR="For download update you should have it."
 XYC_UPDATE_COMPLETE="Update complete."
 XYC_UPDATE_MANUAL="For download script manually browse to:"
+XYC_CREATE_FILE="First create"
 
 #If language file exists, source it to override English language UI strings
 if [[ -s "$LANGUAGE_FILE" && -r "$LANGUAGE_FILE" ]]; then
@@ -213,25 +213,27 @@ showMainMenu ()
   while [ "$EXITACTION" == "" ]
   do
     echo "    ====== ${XYC_MAIN_MENU} ====="
-    echo " [1] $XYC_VIEW_EDIT_SETTINGS"
-    echo " [2] $XYC_CREATE_HDR"
-    echo " [3] $XYC_RESET_SETTINGS"
-    echo " [4] $XYC_SHOW_CARD_SPACE"
-    echo " [5] $XYC_RESTART_CAMERA"
-    echo " [6] $XYC_SCRIPT_UPDATE"
-    echo " [7] $XYC_EXIT"
+    echo " [1] ${XYC_VIEW_EDIT_SETTINGS}"
+    echo " [2] ${XYC_CREATE_HDR}"
+    echo " [3] ${XYC_USER_IMPORT}"
+    echo " [4] ${XYC_RESET_SETTINGS}"
+    echo " [5] ${XYC_SHOW_CARD_SPACE}"
+    echo " [6] ${XYC_RESTART_CAMERA}"
+    echo " [7] ${XYC_SCRIPT_UPDATE}"
+    echo " [8] ${XYC_EXIT}"
 
     read -p "${XYC_SELECT_OPTION}: " REPLY
     clear
     case $REPLY in
-      0) cat $AASH;;
-      1) showSettingsMenu; writeAutoexec $AASH "settings";;
+      0) clear; cat $AASH;;
+      1) showSettingsMenu; writeAutoexec;;
       2) showHDRMenu; writeAutoexec $AASH "hdr";;
-      3) removeAutoexec; resetCameraSettings;;
-      4) showSpaceUsage;;
-      5) EXITACTION="reboot";;
-      6) EXITACTION="update";;
-      7) EXITACTION="nothing";;
+      3) getIncludeUserSettings; writeAutoexec;;
+      4) removeAutoexec; resetCameraSettings;;
+      5) showSpaceUsage;;
+      6) EXITACTION="reboot";;
+      7) EXITACTION="update";;
+      8) EXITACTION="nothing";;
       *) echo "$XYC_INVALID_CHOICE"; REPLY=0;;
     esac
 
@@ -242,7 +244,7 @@ showMainMenu ()
 showSettingsMenu ()
 {
   local REPLY=0
-  while [[ $REPLY -gt -1 && $REPLY -lt 13 ]]
+  while [[ $REPLY -gt -1 && $REPLY -lt 12 ]]
   do
     echo "    == ${XYC_CAMERA_SETTINGS_MENU} =="
     if [ $EXP -eq 0 ]; then 
@@ -300,12 +302,7 @@ showSettingsMenu ()
     else
       echo " [10] ${XYC_BIG_FILE}   : ${XYC_NO}"
     fi
-    if [ $INC_USER == ${XYC_Y} ]; then 
-      echo " [11] ${XYC_USER_IMPORT} : ${XYC_YES}" 
-    else 
-      echo " [11] ${XYC_USER_IMPORT} : ${XYC_NO}"
-    fi
-    echo " [12] ${XYC_SAVE_AND_BACK}"
+    echo " [11] ${XYC_SAVE_AND_BACK}"
 
     read -p "${XYC_SELECT_OPTION}: " REPLY
     case $REPLY in
@@ -319,8 +316,7 @@ showSettingsMenu ()
       8) getRawInput; clear;;
       9) getVideoInput; clear;;
       10) getBigFileInput; clear;;
-      11) getIncludeUserSettings; clear;;
-      12) clear; return 0;;
+      11) clear; return 0;;
       *) clear; echo "$XYC_INVALID_CHOICE"; REPLY=0;;
     esac
   done
@@ -1016,10 +1012,24 @@ getBigFileInput ()
 
 getIncludeUserSettings ()
 {
-  clear  
-  local REPLY=$INC_USER
-  read -p "${XYC_INCLUDE_USER_SETTINGS_PROMPT} [${XYC_ENTER}=$REPLY]: " REPLY
-  if [[ "$REPLY" == ${XYC_Y} || "$REPLY" == ${XYC_N} ]]; then INC_USER=$REPLY; fi
+  clear
+  if [ $INC_USER == ${XYC_Y} ]; then 
+    echo " * ${XYC_USER_IMPORT}: ${XYC_YES}"
+    echo ""
+  fi
+  if [[ "$USER_SETTINGS_FILE" && -r "$USER_SETTINGS_FILE" ]]; then
+    local REPLY=$INC_USER
+    read -p "${XYC_INCLUDE_USER_SETTINGS_PROMPT} [${XYC_ENTER}=$REPLY]: " REPLY
+    if [[ "$REPLY" == ${XYC_Y} || "$REPLY" == ${XYC_N} ]]; then 
+      INC_USER=$REPLY; 
+    fi    
+  else
+    echo "${XYC_CANNOT_READ} $USER_SETTINGS_FILE"
+    echo "${XYC_CREATE_FILE} $USER_SETTINGS_FILE"
+    echo ""
+    read -p "[${XYC_ENTER}]"     
+  fi
+  clear
 }
 
 getHDRInput ()
