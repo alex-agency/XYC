@@ -89,10 +89,11 @@ USER_SETTINGS_FILE="$SCRIPT_DIR/autoexec.xyc"
 # in that file.
 
 XYC_MAIN_MENU="Main Menu"
-XYC_VIEW_EDIT_SETTINGS="View/Edit camera settings"
-XYC_RESET_SETTINGS="Reset/Delete camera settings"
+XYC_EDIT_PHOTO_SETTINGS="View/Edit Photo settings"
+XYC_EDIT_VIDEO_SETTINGS="View/Edit Video settings"
+XYC_RESET_SETTINGS="Reset/Delete Camera settings"
 XYC_SHOW_CARD_SPACE="Show SD card space usage"
-XYC_RESTART_CAMERA="Restart camera"
+XYC_RESTART_CAMERA="Restart Camera"
 XYC_EXIT="Exit"
 XYC_SAVE_AND_BACK="<- Save & Back"
 XYC_SELECT_OPTION="Select option"
@@ -128,11 +129,12 @@ XYC_REBOOTING_NOW="Rebooting now"
 XYC_WRITING="Writing"
 XYC_DELETING="Deleting"
 XYC_CREATE_HDR="View/Edit HDR settings"
-XYC_CAMERA_SETTINGS_MENU="Camera Settings Menu"
+XYC_PHOTO_SETTINGS_MENU="Photo Settings Menu"
+XYC_VIDEO_SETTINGS_MENU="Video Settings Menu"
 XYC_INCLUDE_USER_SETTINGS_PROMPT="Import settings from autoexec.xyc (y/n)"
 XYC_HDR_MENU="HDR Settings Menu"
 XYC_CANNOT_READ="WARNING: Cannot read/access"
-XYC_YIMAX_MOVIE="YiMax Movie"
+XYC_YIMAX_NUTSEY="YiMax Nutsey"
 XYC_USER_IMPORT="Import User settings"
 XYC_YIMAX_PROMPT="YiMax Image Optimization (y/n)"
 XYC_EXPOSURE_MENU="Exposure Setting"
@@ -213,40 +215,41 @@ showMainMenu ()
   while [ "$EXITACTION" == "" ]
   do
     echo "    ====== ${XYC_MAIN_MENU} ====="
-    echo " [1] ${XYC_VIEW_EDIT_SETTINGS}"
-    echo " [2] ${XYC_CREATE_HDR}"
-    echo " [3] ${XYC_USER_IMPORT}"
-    echo " [4] ${XYC_RESET_SETTINGS}"
-    echo " [5] ${XYC_SHOW_CARD_SPACE}"
-    echo " [6] ${XYC_RESTART_CAMERA}"
-    echo " [7] ${XYC_SCRIPT_UPDATE}"
-    echo " [8] ${XYC_EXIT}"
+    echo " [1] ${XYC_EDIT_PHOTO_SETTINGS}"
+    echo " [2] ${XYC_EDIT_VIDEO_SETTINGS}"
+    echo " [3] ${XYC_CREATE_HDR}"
+    echo " [4] ${XYC_USER_IMPORT}"
+    echo " [5] ${XYC_RESET_SETTINGS}"
+    echo " [6] ${XYC_SHOW_CARD_SPACE}"
+    echo " [7] ${XYC_RESTART_CAMERA}"
+    echo " [8] ${XYC_SCRIPT_UPDATE}"
+    echo " [9] ${XYC_EXIT}"
 
     read -p "${XYC_SELECT_OPTION}: " REPLY
     clear
     case $REPLY in
       0) clear; cat $AASH;;
-      1) showSettingsMenu; writeAutoexec;;
-      2) showHDRMenu; writeAutoexec $AASH "hdr";;
-      3) getIncludeUserSettings; writeAutoexec;;
-      4) removeAutoexec; resetCameraSettings;;
-      5) showSpaceUsage;;
-      6) EXITACTION="reboot";;
-      7) EXITACTION="update";;
-      8) EXITACTION="nothing";;
+      1) showPhotoSettingsMenu; writeAutoexec;;
+      2) showVideoSettingsMenu; writeAutoexec;;
+      3) showHDRMenu; writeAutoexec $AASH "hdr";;
+      4) getIncludeUserSettings; writeAutoexec;;
+      5) removeAutoexec; resetCameraSettings;;
+      6) showSpaceUsage;;
+      7) EXITACTION="reboot";;
+      8) EXITACTION="update";;
+      9) EXITACTION="nothing";;
       *) echo "$XYC_INVALID_CHOICE"; REPLY=0;;
     esac
 
   done
 }
 
-
-showSettingsMenu ()
+showPhotoSettingsMenu ()
 {
   local REPLY=0
-  while [[ $REPLY -gt -1 && $REPLY -lt 12 ]]
+  while [ $REPLY -gt -1 ]
   do
-    echo "    == ${XYC_CAMERA_SETTINGS_MENU} =="
+    echo "    == ${XYC_PHOTO_SETTINGS_MENU} =="
     if [ $EXP -eq 0 ]; then 
       echo " [1] ${XYC_EXPOSURE}     : ${XYC_AUTO}" 
     else 
@@ -283,26 +286,16 @@ showSettingsMenu ()
       echo " [6] ${XYC_SHARPNESS}    : ${XYC_DEFAULT}" 
     fi
     if [ $YIMAX == ${XYC_Y} ]; then 
-      echo " [7] ${XYC_YIMAX_MOVIE}  : ${XYC_YES}" 
+      echo " [7] ${XYC_YIMAX_NUTSEY} : ${XYC_YES}" 
     else 
-      echo " [7] ${XYC_YIMAX_MOVIE}  : ${XYC_NO}"
+      echo " [7] ${XYC_YIMAX_NUTSEY} : ${XYC_NO}"
     fi
     if [ $RAW == ${XYC_Y} ]; then 
       echo " [8] ${XYC_CREATE_RAW}   : ${XYC_YES}" 
     else 
       echo " [8] ${XYC_CREATE_RAW}   : ${XYC_NO}"
     fi
-    if [ $RES -eq 0 ]; then 
-      echo " [9] ${XYC_VIDEO_QUALITY}: ${XYC_DEFAULT}" 
-    else
-      echo " [9] ${XYC_VIDEO_QUALITY}: $RESVIEW"
-    fi
-    if [ $BIG_FILE == ${XYC_Y} ]; then 
-      echo " [10] ${XYC_BIG_FILE}   : ${XYC_YES}" 
-    else
-      echo " [10] ${XYC_BIG_FILE}   : ${XYC_NO}"
-    fi
-    echo " [11] ${XYC_SAVE_AND_BACK}"
+    echo " [9] ${XYC_SAVE_AND_BACK}"
 
     read -p "${XYC_SELECT_OPTION}: " REPLY
     case $REPLY in
@@ -314,9 +307,69 @@ showSettingsMenu ()
       6) getSharpnessInput; clear;;
       7) getYiMaxInput; clear;;
       8) getRawInput; clear;;
-      9) getVideoInput; clear;;
-      10) getBigFileInput; clear;;
-      11) clear; return 0;;
+      9) clear; return 0;;
+      *) clear; echo "$XYC_INVALID_CHOICE"; REPLY=0;;
+    esac
+  done
+}
+
+showVideoSettingsMenu ()
+{
+  local REPLY=0
+  while [ $REPLY -gt -1 ]
+  do
+    echo "    == ${XYC_VIDEO_SETTINGS_MENU} =="
+    if [ $AWB == ${XYC_Y} ]; then 
+      echo " [1] ${XYC_AWB}          : ${XYC_ON}" 
+    else 
+      echo " [1] ${XYC_AWB}          : ${XYC_OFF}"
+    fi
+    if [[ -z $NR ]]; then
+      echo " [2] ${XYC_NR}           : ${XYC_DEFAULT}"
+    elif [ $NR -eq -1 ]; then 
+      echo " [2] ${XYC_NR}           : ${XYC_DISABLE}"
+    elif [ $NR -eq 16383 ]; then 
+      echo " [2] ${XYC_NR}           : ${XYC_MAX}"
+    else
+      echo " [2] ${XYC_NR}           : $NR" 
+    fi
+    if [ $SHADOW == ${XYC_Y} ]; then 
+      echo " [3] ${XYC_SHADOW}   : ${XYC_YES}"
+    else 
+      echo " [3] ${XYC_SHADOW}   : ${XYC_NO}" 
+    fi
+    if [[ ! -z $SHR ]]; then 
+      echo " [4] ${XYC_SHARPNESS}    : $SHR $FIR $COR"
+    else 
+      echo " [4] ${XYC_SHARPNESS}    : ${XYC_DEFAULT}" 
+    fi
+    if [ $YIMAX == ${XYC_Y} ]; then 
+      echo " [5] ${XYC_YIMAX_NUTSEY} : ${XYC_YES}" 
+    else 
+      echo " [5] ${XYC_YIMAX_NUTSEY} : ${XYC_NO}"
+    fi
+    if [ $RES -eq 0 ]; then 
+      echo " [6] ${XYC_VIDEO_QUALITY}: ${XYC_DEFAULT}" 
+    else
+      echo " [6] ${XYC_VIDEO_QUALITY}: $RESVIEW"
+    fi
+    if [ $BIG_FILE == ${XYC_Y} ]; then 
+      echo " [7] ${XYC_BIG_FILE}    : ${XYC_YES}" 
+    else
+      echo " [7] ${XYC_BIG_FILE}    : ${XYC_NO}"
+    fi
+    echo " [8] ${XYC_SAVE_AND_BACK}"
+
+    read -p "${XYC_SELECT_OPTION}: " REPLY
+    case $REPLY in
+      1) getAWBInput; clear;;
+      2) getNRInput; clear;;
+      3) getShadowInput; clear;;
+      4) getSharpnessInput; clear;;
+      5) getYiMaxInput; clear;;
+      6) getVideoInput; clear;;
+      7) getBigFileInput; clear;;
+      8) clear; return 0;;
       *) clear; echo "$XYC_INVALID_CHOICE"; REPLY=0;;
     esac
   done
@@ -1148,8 +1201,7 @@ writeAutoexec ()
   fi
 
   if [ "$YIMAX" == ${XYC_Y} ]; then
-    echo "#YiMAX-movie script by nutsey" >> $OUTFILE
-    echo "#This script is for video mode!" >> $OUTFILE
+    echo "#YiMAX script by nutsey" >> $OUTFILE
     echo "t ia2 -adj ev 10 0 60 0 0 140 0" >> $OUTFILE
     echo "#this makes blacks not crushed" >> $OUTFILE
     echo "t ia2 -adj l_expo 163" >> $OUTFILE
