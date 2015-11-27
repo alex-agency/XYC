@@ -33,8 +33,9 @@
 #
 # Changelog:
 #
-# 0.3.4 (Nov 2015) - Support for 24fps and 48fps video 
-# by Alex          - Fixed 2560x1440 resolution, now it's upscaling from 2304x1296 
+# 0.3.4 (Nov 2015) - Ability to set bitrates for all resolutions
+# by Alex          - Support for 24fps and 48fps video 
+#                  - Fixed 2560x1440 resolution, now it's upscaling from 2304x1296 
 #                  - Increased script performance
 #                  - Fixed issue with XYC Update 
 # 0.3.3 (Oct 2015) - Support latest 1.2.13 firmware
@@ -1526,12 +1527,26 @@ writeAutoexec ()
     echo "" >> $OUTFILE
   fi
 
-  echo "#short beep" >> $OUTFILE
-  echo "t pwm 1 enable" >> $OUTFILE
-  echo "sleep 1" >> $OUTFILE
-  echo "t pwm 1 disable" >> $OUTFILE
+  echo "#set buzzer volume 1-150" >> $OUTFILE
+  echo "t pwm 1 set_level 75" >> $OUTFILE
   echo "" >> $OUTFILE
-  
+  echo "#front led blink" >> $OUTFILE
+  echo "t gpio 6 sw out1" >> $OUTFILE         #front blue on
+  echo "sleep 1" >> $OUTFILE
+  echo "t gpio 6 sw out0" >> $OUTFILE         #front blue off
+  echo "t gpio 54 sw out1" >> $OUTFILE        #front red on
+  echo "sleep 1" >> $OUTFILE 
+  echo "t gpio 54 sw out0" >> $OUTFILE        #front red off  
+  echo "#short beep & front leds" >> $OUTFILE
+  echo "t gpio 6 sw out1" >> $OUTFILE         #front blue on
+  echo "t gpio 54 sw out1" >> $OUTFILE        #front red on
+  echo "t pwm 1 enable" >> $OUTFILE           #beep on  
+  echo "sleep 1" >> $OUTFILE
+  echo "t gpio 6 sw out0" >> $OUTFILE         #front blue off
+  echo "t gpio 54 sw out0" >> $OUTFILE        #front red off 
+  echo "t pwm 1 disable" >> $OUTFILE          #beep off
+  echo "" >> $OUTFILE  
+
   promptToRestart
 }
 
