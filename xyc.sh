@@ -35,7 +35,8 @@
 #
 # 0.3.4 (Nov 2015) - Support for 24fps and 48fps video 
 # by Alex          - Fixed 2560x1440 resolution, now it's upscaling from 2304x1296 
-#                  - Increase script performance
+#                  - Increased script performance
+#                  - Fixed issue with XYC Update 
 # 0.3.3 (Oct 2015) - Support latest 1.2.13 firmware
 # by Alex          - Added support file weight limit to 4GB
 #                  - Added 1440p resolution for test purpose
@@ -180,7 +181,12 @@ XYC_CUSTOM_NR_PROMPT="Enter Noise Reduction (0-16383)"
 XYC_MAX="Max"
 XYC_DISABLE="Disable"
 XYC_UPDATING_NOW="Updating now"
-XYC_SCRIPT_UPDATE="XYC Update"
+XYC_SCRIPT_UPDATE="Update XYC"
+XYC_UPDATE_NOW_PROMPT="Download latest and rewrite XYC script (y/n)"
+XYC_NO_INTERNET="You don't have internet connection."
+XYC_UPDATE_ERROR="For download update you should have it."
+XYC_UPDATE_COMPLETE="Update complete."
+XYC_UPDATE_MANUAL="For download script manually browse to:"
 
 #If language file exists, source it to override English language UI strings
 if [[ -s "$LANGUAGE_FILE" && -r "$LANGUAGE_FILE" ]]; then
@@ -197,7 +203,7 @@ welcome ()
   clear
   echo ""
   echo " *  Xiaomi Yi Configurator  * "
-  echo " *  11/25/2015  ${VERS}  * "
+  echo " *  11/27/2015  ${VERS}  * "
   echo ""
 }
 
@@ -1450,15 +1456,13 @@ promptToRestart ()
   #clear
 }
 
-
-#Main program
-parseExistingAutoexec
-parseCommandLine $*
-setMissingValues
-welcome
-showMainMenu
-
-if [ "$EXITACTION" == "update" ]; then
+updateXYC ()
+{
+  local REPLY=${XYC_N}
+  read -p "${XYC_UPDATE_NOW_PROMPT}? [${XYC_ENTER}=$REPLY]: " REPLY
+  if [[ -z $REPLY || "$REPLY" == ${XYC_N} ]]; then
+    return 1;
+  fi
   echo ""
   echo " *********************************** "
   echo " *                                 * "
@@ -1468,24 +1472,55 @@ if [ "$EXITACTION" == "update" ]; then
   echo ""
   sleep 1
   clear
-  if which git >/dev/null; then
-    cd $SCRIPT_DIR
-    git clone https://github.com/alex-agency/XYC.git
-    if [[ -d $SCRIPT_DIR/XYC && -r $SCRIPT_DIR/XYC/xyc.sh ]]; then
-      cp $SCRIPT_DIR/XYC/xyc.sh $SCRIPT_DIR/xyc.sh
-      rm -rf $SCRIPT_DIR/XYC
-      bash $SCRIPT_DIR/xyc.sh
+  cd $SCRIPT_DIR
+  local URL="https://raw.githubusercontent.com/alex-agency/XYC/master/xyc.sh"
+  if which wget >/dev/null; then
+    if wget -S --spider $URL 2>&1 | grep 'HTTP/1.1 200 OK'; then
+      wget -O xyc.sh $URL
+      return;  
+    else
+      echo ""
+      echo " ${XYC_NO_INTERNET}"
+      echo " ${XYC_UPDATE_ERROR}"
+    fi
+  elif which curl >/dev/null; then
+    if curl -sSf $URL >/dev/null; then
+      curl $URL > xyc.sh
+      return; 
+    else
+      echo ""
+      echo " ${XYC_NO_INTERNET}"
+      echo " ${XYC_UPDATE_ERROR}"
     fi
   else
     echo ""
-    echo " git: command not found "
-    echo " For update you should have Git. "
+    echo " wget: command not found "
+    echo " curl: command not found "
+    echo " ${XYC_UPDATE_ERROR}"
+  fi
+  return 1;
+}
+
+
+#Main program
+parseExistingAutoexec
+parseCommandLine $*
+setMissingValues
+welcome
+showMainMenu
+
+if [ "$EXITACTION" == "update" ]; then
+  if updateXYC; then
     echo ""
-    echo " For download script manually browse to: "
+    echo " ${XYC_UPDATE_COMPLETE}"
+  else
+    echo ""
+    echo " ${XYC_UPDATE_MANUAL}"
     echo " https://github.com/alex-agency/XYC.git "
-    echo ""
-    read -p "[${XYC_ENTER}]"
-  fi  
+  fi
+  echo ""
+  read -p "[${XYC_ENTER}]"  
+  bash $SCRIPT_DIR/xyc.sh 
 elif [ "$EXITACTION" == "reboot" ]; then
   echo ""
   echo " *********************************** "
