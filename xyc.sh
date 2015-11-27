@@ -153,7 +153,7 @@ XYC_THIRD="Third"
 XYC_SECOND="Second"
 XYC_FIRST="First"
 XYC_AVOID_LIGHT="*AVOID LIGHT*"
-XYC_VIDEO_QUALITY="Video Quality"
+XYC_RESOLUTION="Resolution"
 XYC_DEFAULT="Default"
 XYC_VIDEO_RESOLUTION="Video Resolution"
 XYC_VIDEO_FREQUENCY="Video Frequency"
@@ -189,6 +189,7 @@ XYC_UPDATE_ERROR="For download update you should have it."
 XYC_UPDATE_COMPLETE="Update complete."
 XYC_UPDATE_MANUAL="For download script manually browse to:"
 XYC_CREATE_FILE="First create"
+XYC_BITRATE="All Bitrate"
 
 #If language file exists, source it to override English language UI strings
 if [[ -s "$LANGUAGE_FILE" && -r "$LANGUAGE_FILE" ]]; then
@@ -266,7 +267,7 @@ showPhotoSettingsMenu ()
     else 
       echo " [3] ${XYC_AWB}          : ${XYC_OFF}"
     fi
-    if [[ -z $NR ]]; then
+    if [ -z $NR ]; then
       echo " [4] ${XYC_NR}           : ${XYC_DEFAULT}"
     elif [ $NR -eq -1 ]; then 
       echo " [4] ${XYC_NR}           : ${XYC_DISABLE}"
@@ -324,7 +325,7 @@ showVideoSettingsMenu ()
     else 
       echo " [1] ${XYC_AWB}          : ${XYC_OFF}"
     fi
-    if [[ -z $NR ]]; then
+    if [ -z $NR ]; then
       echo " [2] ${XYC_NR}           : ${XYC_DEFAULT}"
     elif [ $NR -eq -1 ]; then 
       echo " [2] ${XYC_NR}           : ${XYC_DISABLE}"
@@ -349,16 +350,21 @@ showVideoSettingsMenu ()
       echo " [5] ${XYC_YIMAX_NUTSEY} : ${XYC_NO}"
     fi
     if [ $RES -eq 0 ]; then 
-      echo " [6] ${XYC_VIDEO_QUALITY}: ${XYC_DEFAULT}" 
+      echo " [6] ${XYC_RESOLUTION}   : ${XYC_DEFAULT}" 
     else
-      echo " [6] ${XYC_VIDEO_QUALITY}: $RESVIEW"
+      echo " [6] ${XYC_RESOLUTION}   : $RESVIEW"
+    fi
+    if [[ -z $BIT || $BIT -eq 0 ]]; then 
+      echo " [7] ${XYC_BITRATE}  : ${XYC_DEFAULT}" 
+    else
+      echo " [7] ${XYC_BITRATE}  : $BITVIEW"
     fi
     if [ $BIG_FILE == ${XYC_Y} ]; then 
-      echo " [7] ${XYC_BIG_FILE}    : ${XYC_YES}" 
+      echo " [8] ${XYC_BIG_FILE}    : ${XYC_YES}" 
     else
-      echo " [7] ${XYC_BIG_FILE}    : ${XYC_NO}"
+      echo " [8] ${XYC_BIG_FILE}    : ${XYC_NO}"
     fi
-    echo " [8] ${XYC_SAVE_AND_BACK}"
+    echo " [9] ${XYC_SAVE_AND_BACK}"
 
     read -p "${XYC_SELECT_OPTION}: " REPLY
     case $REPLY in
@@ -367,9 +373,10 @@ showVideoSettingsMenu ()
       3) getShadowInput; clear;;
       4) getSharpnessInput; clear;;
       5) getYiMaxInput; clear;;
-      6) getVideoInput; clear;;
-      7) getBigFileInput; clear;;
-      8) clear; return 0;;
+      6) getVideoResolutionInput; clear;;
+      7) getVideoBitrateInput; clear;;
+      8) getBigFileInput; clear;;
+      9) clear; return 0;;
       *) clear; echo "$XYC_INVALID_CHOICE"; REPLY=0;;
     esac
   done
@@ -629,7 +636,8 @@ setMissingValues ()
   if [[ "${INC_USER}" != ${XYC_Y} && "${INC_USER}" != ${XYC_N} ]]; then INC_USER=${XYC_N}; fi
   if [[ "$YIMAX" != ${XYC_Y} && "$YIMAX" != ${XYC_N} ]]; then YIMAX=${XYC_N}; fi
   if [[ "$SHADOW" != ${XYC_Y} && "$SHADOW" != ${XYC_N} ]]; then SHADOW=${XYC_N}; fi
-  if [ -z "$RES" ]; then RES=0; FPS=2; BIT="0x41C8"; else setRESView; fi
+  if [ -z "$RES" ]; then RES=0; FPS=2; else setRESView; fi
+  setBITView
 }
 
 getExposureInput ()
@@ -734,7 +742,7 @@ expView ()
 getISOInput ()
 {
   clear
-  if [[ -z $AUTAN ]]; then
+  if [ -z $AUTAN ]; then
     expView $EXP
     echo " * ${XYC_EXPOSURE}: $EXPVIEW "
   elif [ $AUTAN -eq 2 ]; then
@@ -895,7 +903,7 @@ getYiMaxInput ()
   if [[ "$REPLY" == ${XYC_Y} || "$REPLY" == ${XYC_N} ]]; then YIMAX=$REPLY; fi
 }
 
-getVideoInput ()
+getVideoResolutionInput ()
 {
   clear
   echo " ********* ${XYC_VIDEO_RESOLUTION} ******** "
@@ -916,10 +924,11 @@ getVideoInput ()
     6) RES=6;;
   esac
   if [ $RES -ge 5 ]; then
-    FPS=2; getVideoBitrateInput  
+    FPS=2; 
   else
     getVideoFrequencyInput  
   fi
+  setRESView
 }
 
 getVideoFrequencyInput ()
@@ -950,21 +959,21 @@ getVideoFrequencyInput ()
           FPS=2 
         fi;;
   esac
-  getVideoBitrateInput
 }
 
 getVideoBitrateInput ()
 {
   clear
   echo " ********** ${XYC_VIDEO_BITRATE} ********** "
+  echo " * (0) ${XYC_DEFAULT}    (4) 35 Mb/s      * "
   echo " * (1) 20 Mb/s    (5) 40 Mb/s      * "
   echo " * (2) 25 Mb/s    (6) 45 Mb/s      * "
   echo " * (3) 30 Mb/s    (7) 50 Mb/s      * "
-  echo " * (4) 35 Mb/s                     * "
   echo " *********************************** "
   local REPLY
   read -p "${XYC_SELECT_OPTION}: " REPLY
   case $REPLY in 
+    0) BIT=0; return;;
     1) BIT="0x41A0";;
     2) BIT="0x41C8";;
     3) BIT="0x41F0";;
@@ -973,7 +982,7 @@ getVideoBitrateInput ()
     6) BIT="0x4234";;
     7) BIT="0x4248";;
   esac
-  setRESView
+  setBITView
 }
 
 setRESView ()
@@ -1035,23 +1044,24 @@ setRESView ()
       RESVIEW="$RESVIEW@30"
     fi
   fi
+}
 
-  if [ $RES -ne 0 ]; then
-    if [ "$BIT" == "0x41A0" ]; then
-      RESVIEW="$RESVIEW 20Mb"
-    elif [ "$BIT" == "0x41C8" ]; then
-      RESVIEW="$RESVIEW 25Mb"
-    elif [ "$BIT" == "0x41F0" ]; then
-      RESVIEW="$RESVIEW 30Mb"
-    elif [ "$BIT" == "0x420C" ]; then
-      RESVIEW="$RESVIEW 35Mb"
-    elif [ "$BIT" == "0x4220" ]; then
-      RESVIEW="$RESVIEW 40Mb"
-    elif [ "$BIT" == "0x4234" ]; then
-      RESVIEW="$RESVIEW 45Mb"
-    elif [ "$BIT" == "0x4248" ]; then
-      RESVIEW="$RESVIEW 50Mb"
-    fi
+setBITView ()
+{
+  if [ "$BIT" == "0x41A0" ]; then
+    BITVIEW="20Mb"
+  elif [ "$BIT" == "0x41C8" ]; then
+    BITVIEW="25Mb"
+  elif [ "$BIT" == "0x41F0" ]; then
+    BITVIEW="30Mb"
+  elif [ "$BIT" == "0x420C" ]; then
+    BITVIEW="35Mb"
+  elif [ "$BIT" == "0x4220" ]; then
+    BITVIEW="40Mb"
+  elif [ "$BIT" == "0x4234" ]; then
+    BITVIEW="45Mb"
+  elif [ "$BIT" == "0x4248" ]; then
+    BITVIEW="50Mb"
   fi
 }
 
@@ -1255,23 +1265,18 @@ writeAutoexec ()
     if [ $FPS -eq 1 ]; then                         #1280x720 24fps
       echo "writeb 0xC06CC426 0x28" >> $OUTFILE
       echo "writel 0xC05C2FAC 0x02D00500" >> $OUTFILE
-      echo "writew 0xC05C25D2 $BIT" >> $OUTFILE
     elif [ $FPS -eq 2 ]; then                       #1280x720 30fps
       echo "writeb 0xC06CC426 0x11" >> $OUTFILE
       echo "writel 0xC05C2DE0 0x02D00500" >> $OUTFILE
-      echo "writew 0xC05C2182 $BIT" >> $OUTFILE
     elif [ $FPS -eq 3 ]; then                       #1280x720 48fps
       echo "writeb 0xC06CC426 0x27" >> $OUTFILE
       echo "writel 0xC05C2F98 0x02D00500" >> $OUTFILE
-      echo "writew 0xC05C25A2 $BIT" >> $OUTFILE
     elif [ $FPS -eq 4 ]; then                       #1280x720 60fps
       echo "writeb 0xC06CC426 0x0F" >> $OUTFILE
       echo "writel 0xC05C2DB8 0x02D00500" >> $OUTFILE
-      echo "writew 0xC05C2122 $BIT" >> $OUTFILE
     elif [ $FPS -eq 5 ]; then                       #1280x720 120fps
       echo "writeb 0xC06CC426 0x34" >> $OUTFILE
       echo "writel 0xC05C309C 0x02D00500" >> $OUTFILE
-      echo "writew 0xC05C2812 $BIT" >> $OUTFILE
     fi
     echo "" >> $OUTFILE
   elif [ $RES -eq 2 ]; then
@@ -1279,19 +1284,15 @@ writeAutoexec ()
     if [ $FPS -eq 1 ]; then                         #1280x960 24fps
       echo "writeb 0xC06CC426 0x26" >> $OUTFILE
       echo "writel 0xC05C2F84 0x03C00500" >> $OUTFILE
-      echo "writew 0xC05C2572 $BIT" >> $OUTFILE
     elif [ $FPS -eq 2 ]; then                       #1280x960 30fps
       echo "writeb 0xC06CC426 0x17" >> $OUTFILE
       echo "writel 0xC05C2E58 0x03C00500" >> $OUTFILE
-      echo "writew 0xC05C22A2 $BIT" >> $OUTFILE
     elif [ $FPS -eq 3 ]; then                       #1280x960 48fps
       echo "writeb 0xC06CC426 0x25" >> $OUTFILE
       echo "writel 0xC05C2F70 0x03C00500" >> $OUTFILE
-      echo "writew 0xC05C2542 $BIT" >> $OUTFILE
     elif [ $FPS -eq 4 ]; then                       #1280x960 60fps
       echo "writeb 0xC06CC426 0x16" >> $OUTFILE
       echo "writel 0xC05C2E44 0x03C00500" >> $OUTFILE     
-      echo "writew 0xC05C2272 $BIT" >> $OUTFILE
     fi
     echo "" >> $OUTFILE
   elif [ $RES -eq 3 ]; then
@@ -1299,19 +1300,15 @@ writeAutoexec ()
     if [ $FPS -eq 1 ]; then                         #1600x1200 24fps
       echo "writeb 0xC06CC426 0x24" >> $OUTFILE
       echo "writel 0xC05C2F5C 0x04B00640" >> $OUTFILE      
-      echo "writew 0xC05C2512 $BIT" >> $OUTFILE
     elif [ $FPS -eq 2 ]; then                       #1600x1200 30fps
       echo "writeb 0xC06CC426 0x0D" >> $OUTFILE
       echo "writel 0xC05C2D90 0x04B00640" >> $OUTFILE    
-      echo "writew 0xC05C20C2 $BIT" >> $OUTFILE
     elif [ $FPS -eq 3 ]; then                       #1600x1200 48fps
       echo "writeb 0xC06CC426 0x23" >> $OUTFILE
       echo "writel 0xC05C2F48 0x04B00640" >> $OUTFILE      
-      echo "writew 0xC05C24E2 $BIT" >> $OUTFILE
     elif [ $FPS -eq 4 ]; then                       #1600x1200 60fps
       echo "writeb 0xC06CC426 0x0C" >> $OUTFILE
       echo "writel 0xC05C2D7C 0x04B00640" >> $OUTFILE    
-      echo "writew 0xC05C2092 $BIT" >> $OUTFILE
     fi
     echo "" >> $OUTFILE
   elif [ $RES -eq 4 ]; then
@@ -1319,19 +1316,15 @@ writeAutoexec ()
     if [ $FPS -eq 1 ]; then                         #1920x1080 24fps
       echo "writeb 0xC06CC426 0x21" >> $OUTFILE
       echo "writel 0xC05C2F20 0x04380780" >> $OUTFILE
-      echo "writew 0xC05C2482 $BIT" >> $OUTFILE
     elif [ $FPS -eq 2 ]; then                       #1920x1080 30fps
       echo "writeb 0xC06CC426 0x06" >> $OUTFILE
       echo "writel 0xC05C2D04 0x04380780" >> $OUTFILE
-      echo "writew 0xC05C1F72 $BIT" >> $OUTFILE
     elif [ $FPS -eq 3 ]; then                       #1920x1080 48fps
       echo "writeb 0xC06CC426 0x20" >> $OUTFILE
       echo "writel 0xC05C2F0C 0x04380780" >> $OUTFILE
-      echo "writew 0xC05C2452 $BIT" >> $OUTFILE
     elif [ $FPS -eq 4 ]; then                       #1920x1080 60fps
       echo "writeb 0xC06CC426 0x03" >> $OUTFILE
       echo "writel 0xC05C2CC8 0x04380780" >> $OUTFILE
-      echo "writew 0xC05C1EE2 $BIT" >> $OUTFILE
     fi
     echo "" >> $OUTFILE
   elif [ $RES -eq 5 ]; then
@@ -1339,7 +1332,6 @@ writeAutoexec ()
     if [ $FPS -eq 2 ]; then                       #2304x1296 30fps                         
       echo "writeb 0xC06CC426 0x02" >> $OUTFILE
       echo "writel 0xC05C2CB4 0x05100900" >> $OUTFILE
-      echo "writew 0xC05C1EB2 $BIT" >> $OUTFILE
     fi
     echo "" >> $OUTFILE
   elif [ $RES -eq 6 ]; then
@@ -1347,8 +1339,48 @@ writeAutoexec ()
     if [ $FPS -eq 2 ]; then                       #2560x1440 30fps  
       echo "writeb 0xC06CC426 0x02" >> $OUTFILE
       echo "writel 0xC05C2CB4 0x05A00A00" >> $OUTFILE
-      echo "writew 0xC05C1EB2 $BIT" >> $OUTFILE
     fi
+    echo "" >> $OUTFILE
+  fi
+  
+  if [[ ! -z $BIT && $BIT -ne 0 ]]; then
+    echo "#set all resolutions $BITVIEW bitrate" >> $OUTFILE
+    echo "#1280x720 24fps" >> $OUTFILE
+    echo "writew 0xC05C25D2 $BIT" >> $OUTFILE
+    echo "#1280x720 30fps" >> $OUTFILE
+    echo "writew 0xC05C2182 $BIT" >> $OUTFILE
+    echo "#1280x720 48fps" >> $OUTFILE
+    echo "writew 0xC05C25A2 $BIT" >> $OUTFILE
+    echo "#1280x720 60fps" >> $OUTFILE
+    echo "writew 0xC05C2122 $BIT" >> $OUTFILE
+    echo "#1280x720 120fps" >> $OUTFILE
+    echo "writew 0xC05C2812 $BIT" >> $OUTFILE
+    echo "#1280x960 24fps" >> $OUTFILE
+    echo "writew 0xC05C2572 $BIT" >> $OUTFILE
+    echo "#1280x960 30fps" >> $OUTFILE
+    echo "writew 0xC05C22A2 $BIT" >> $OUTFILE
+    echo "#1280x960 48fps" >> $OUTFILE
+    echo "writew 0xC05C2542 $BIT" >> $OUTFILE 
+    echo "#1280x960 60fps" >> $OUTFILE
+    echo "writew 0xC05C2272 $BIT" >> $OUTFILE 
+    echo "#1600x1200 24fps" >> $OUTFILE
+    echo "writew 0xC05C2512 $BIT" >> $OUTFILE 
+    echo "#1600x1200 30fps" >> $OUTFILE
+    echo "writew 0xC05C20C2 $BIT" >> $OUTFILE
+    echo "#1600x1200 48fps" >> $OUTFILE
+    echo "writew 0xC05C24E2 $BIT" >> $OUTFILE
+    echo "#1600x1200 60fps" >> $OUTFILE
+    echo "writew 0xC05C2092 $BIT" >> $OUTFILE
+    echo "#1920x1080 24fps" >> $OUTFILE
+    echo "writew 0xC05C2482 $BIT" >> $OUTFILE
+    echo "#1920x1080 30fps" >> $OUTFILE    
+    echo "writew 0xC05C1F72 $BIT" >> $OUTFILE
+    echo "#1920x1080 48fps" >> $OUTFILE   
+    echo "writew 0xC05C2452 $BIT" >> $OUTFILE
+    echo "#1920x1080 60fps" >> $OUTFILE  
+    echo "writew 0xC05C1EE2 $BIT" >> $OUTFILE
+    echo "#2304x1296 30fps" >> $OUTFILE
+    echo "writew 0xC05C1EB2 $BIT" >> $OUTFILE
     echo "" >> $OUTFILE
   fi
 
@@ -1394,7 +1426,7 @@ writeAutoexec ()
     echo "chroma_median_filter.cr_strength 128" >> $PRAWNCONF
     echo "demosaic.activity_thresh 3" >> $PRAWNCONF
     echo "demosaic.grad_noise_thresh 32" >> $PRAWNCONF
-    if [[ -z $SHR ]]; then
+    if [ -z $SHR ]; then
         echo "sharpening_fir.fir_strength 64" >> $PRAWNCONF
         echo "sharpening_coring.coring_table 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14" >> $PRAWNCONF
         echo "directional_sharpening.enable 0" >> $PRAWNCONF
