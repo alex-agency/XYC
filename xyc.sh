@@ -35,7 +35,8 @@
 #
 # 0.3.4 (Nov 2015) - Added ability to set bitrates for all resolutions
 # by Alex          - Added new video frequencies: 24fps, 48fps
-#                  - Resolved 2560x1440 resolution, it's upscaling from 2304x1296 
+#                  - Resolved 2560x1440 resolution, it's upscaling from 2304x1296
+#                  - Added ability to adjust Auto Knee, Gamma level
 #                  - Increased script performance
 #                  - Fixed issue in XYC Update
 #                  - Fixed issue in HDR scripts
@@ -74,7 +75,7 @@ if [ ! -d "$FUSED" ]; then
 fi
 AASH=${FUSED}/autoexec.ash
 PRAWNCONF=${FUSED}/goprawn.config
-CORCONF=${FUSED}/coring.config
+CORCONF=${FUSED}/sharpening.config
 THIS_SCRIPT="$SCRIPT_DIR/`basename "$0"`"
 LANGUAGE_FILE="$SCRIPT_DIR/xyc_strings.sh"
 USER_SETTINGS_FILE="$SCRIPT_DIR/autoexec.xyc"
@@ -136,9 +137,9 @@ XYC_VIDEO_SETTINGS_MENU="Video Settings Menu"
 XYC_INCLUDE_USER_SETTINGS_PROMPT="Import settings from autoexec.xyc (y/n)"
 XYC_HDR_MENU="HDR Settings Menu"
 XYC_CANNOT_READ="WARNING: Cannot read/access"
-XYC_YIMAX_NUTSEY="YiMax Nutsey"
+XYC_PRAWN_NUTSEY="GoPrawn"
 XYC_USER_IMPORT="Import User settings"
-XYC_YIMAX_PROMPT="YiMax Image Optimization (y/n)"
+XYC_PRAWN_PROMPT="GoPrawn Nutsey script (y/n)"
 XYC_EXPOSURE_MENU="Exposure Setting"
 XYC_ISO_MENU="ISO Setting"
 XYC_SEC="sec"
@@ -160,8 +161,8 @@ XYC_DEFAULT="Default"
 XYC_VIDEO_RESOLUTION="Video Resolution"
 XYC_VIDEO_FREQUENCY="Video Frequency"
 XYC_VIDEO_BITRATE="Video Bitrate"
-XYC_SHADOW="Shadow Adj"
-XYC_SHADOW_PROMPT="Shadow/Highlight/Gamma clipping adjustments (y/n)"
+XYC_AUTOKNEE="Auto Knee"
+XYC_AUTOKNEE_PROMPT="Enter Auto Knee level (0-255)"
 XYC_SHARPNESS="Sharpness"
 XYC_SHARPNESS_MENU="Sharpness Menu"
 XYC_SHARPNESS_MODE="Sharpness Mode"
@@ -179,7 +180,6 @@ XYC_RESOLUTION_WARNING="Warning Resolution"
 XYC_NR_MENU="Noise Reduction Menu"
 XYC_DISABLE_NR="Disable NR"
 XYC_MAX_NR="Max NR"
-XYC_CUSTOM_NR="Custom NR"
 XYC_CUSTOM_NR_PROMPT="Enter Noise Reduction (0-16383)"
 XYC_MAX="Max"
 XYC_DISABLE="Disable"
@@ -194,6 +194,13 @@ XYC_CREATE_FILE="First create"
 XYC_BITRATE="Bitrate all"
 XYC_AAA="AAA"
 XYC_AAA_PROMPT="AAA function: set AE/AWB/ADJ locks (y/n)"
+XYC_GAMMA="Gamma"
+XYC_GAMMA_PROMPT="Enter Gamma level (0-255)"
+XYC_GAMMA_MENU="Gamma Menu"
+XYC_CUSTOM="Custom"
+XYC_AUTOKNEE_MENU="Auto Knee Menu"
+XYC_VIBSAT="Saturation"
+XYC_VIBSAT_PROMPT="Vibrance and Saturation adjustments (y/n)"
 
 #If language file exists, source it to override English language UI strings
 if [[ -s "$LANGUAGE_FILE" && -r "$LANGUAGE_FILE" ]]; then
@@ -271,38 +278,44 @@ showPhotoSettingsMenu ()
     else 
       echo " [3] ${XYC_AWB}          : ${XYC_OFF}"
     fi
-    if [ $SHADOW == ${XYC_Y} ]; then 
-      echo " [4] ${XYC_SHADOW}   : ${XYC_YES}"
+    if [ -z $AUTOKNEE ]; then 
+      echo " [4] ${XYC_AUTOKNEE}    : ${XYC_DEFAULT}"
     else 
-      echo " [4] ${XYC_SHADOW}   : ${XYC_NO}" 
+      echo " [4] ${XYC_AUTOKNEE}    : $AUTOKNEE" 
     fi
-    if [[ ! -z $SHR ]]; then 
-      echo " [5] ${XYC_SHARPNESS}    : $SHR $FIR $COR"
+    if [ $VIBSAT == ${XYC_Y} ]; then 
+      echo " [5] ${XYC_VIBSAT}   : ${XYC_YES}" 
     else 
-      echo " [5] ${XYC_SHARPNESS}    : ${XYC_DEFAULT}" 
+      echo " [5] ${XYC_VIBSAT}   : ${XYC_DEFAULT}"
     fi
-    if [ $YIMAX == ${XYC_Y} ]; then 
-      echo " [6] ${XYC_YIMAX_NUTSEY} : ${XYC_YES}" 
+    if [ -z $SHR ]; then 
+      echo " [6] ${XYC_SHARPNESS}    : ${XYC_DEFAULT}"
     else 
-      echo " [6] ${XYC_YIMAX_NUTSEY} : ${XYC_NO}"
+      echo " [6] ${XYC_SHARPNESS}    : $SHR $FIR $COR"
+    fi
+    if [ $PRAWN == ${XYC_Y} ]; then 
+      echo " [7] ${XYC_PRAWN_NUTSEY}      : ${XYC_YES}" 
+    else 
+      echo " [7] ${XYC_PRAWN_NUTSEY}      : ${XYC_NO}"
     fi
     if [ $RAW == ${XYC_Y} ]; then 
-      echo " [7] ${XYC_CREATE_RAW}   : ${XYC_YES}" 
+      echo " [8] ${XYC_CREATE_RAW}   : ${XYC_YES}" 
     else 
-      echo " [7] ${XYC_CREATE_RAW}   : ${XYC_NO}"
+      echo " [8] ${XYC_CREATE_RAW}   : ${XYC_NO}"
     fi
-    echo " [8] ${XYC_SAVE_AND_BACK}"
+    echo " [9] ${XYC_SAVE_AND_BACK}"
 
     read -p "${XYC_SELECT_OPTION}: " REPLY
     case $REPLY in
       1) getExposureInput; clear;;
       2) getISOInput; clear;;
       3) getAWBInput; clear;;
-      4) getShadowInput; clear;;
-      5) getSharpnessInput; clear;;
-      6) getYiMaxInput; clear;;
-      7) getRawInput; clear;;
-      8) clear; return 0;;
+      4) getAutoKneeInput; clear;;
+      5) getVibSatInput; clear;;
+      6) getSharpnessInput; clear;;
+      7) getGoPrawnInput; clear;;
+      8) getRawInput; clear;;
+      9) clear; return 0;;
       *) clear; echo "$XYC_INVALID_CHOICE"; REPLY=0;;
     esac
   done
@@ -326,51 +339,63 @@ showVideoSettingsMenu ()
     if [ $AAA == ${XYC_Y} ]; then 
       echo " [2] ${XYC_AAA}          : ${XYC_YES}"
     else 
-      echo " [2] ${XYC_AAA}          : ${XYC_NO}" 
+      echo " [2] ${XYC_AAA}          : ${XYC_DEFAULT}" 
     fi
-    if [ $SHADOW == ${XYC_Y} ]; then 
-      echo " [3] ${XYC_SHADOW}   : ${XYC_YES}"
+    if [ -z $GAMMA ]; then 
+      echo " [3] ${XYC_GAMMA}        : ${XYC_DEFAULT}"
     else 
-      echo " [3] ${XYC_SHADOW}   : ${XYC_NO}" 
+      echo " [3] ${XYC_GAMMA}        : $GAMMA" 
     fi
-    if [[ ! -z $SHR ]]; then 
-      echo " [4] ${XYC_SHARPNESS}    : $SHR $FIR $COR"
+    if [ -z $AUTOKNEE ]; then 
+      echo " [4] ${XYC_AUTOKNEE}    : ${XYC_DEFAULT}"
     else 
-      echo " [4] ${XYC_SHARPNESS}    : ${XYC_DEFAULT}" 
+      echo " [4] ${XYC_AUTOKNEE}    : $AUTOKNEE" 
     fi
-    if [ $YIMAX == ${XYC_Y} ]; then 
-      echo " [5] ${XYC_YIMAX_NUTSEY} : ${XYC_YES}" 
+    if [ $VIBSAT == ${XYC_Y} ]; then 
+      echo " [5] ${XYC_VIBSAT}   : ${XYC_YES}" 
     else 
-      echo " [5] ${XYC_YIMAX_NUTSEY} : ${XYC_NO}"
+      echo " [5] ${XYC_VIBSAT}   : ${XYC_DEFAULT}"
+    fi
+    if [ -z $SHR ]; then 
+      echo " [6] ${XYC_SHARPNESS}    : ${XYC_DEFAULT}"
+    else 
+      echo " [6] ${XYC_SHARPNESS}    : $SHR $FIR $COR" 
+    fi
+    if [ $PRAWN == ${XYC_Y} ]; then 
+      echo " [7] ${XYC_PRAWN_NUTSEY}      : ${XYC_YES}" 
+    else 
+      echo " [7] ${XYC_PRAWN_NUTSEY}      : ${XYC_NO}"
     fi
     if [ $RES -eq 0 ]; then 
-      echo " [6] ${XYC_RESOLUTION}   : ${XYC_DEFAULT}" 
+      echo " [8] ${XYC_RESOLUTION}   : ${XYC_DEFAULT}" 
     else
-      echo " [6] ${XYC_RESOLUTION}   : $RESVIEW"
+      echo " [8] ${XYC_RESOLUTION}   : $RESVIEW"
     fi
     if [[ -z $BIT || $BIT -eq 0 ]]; then 
-      echo " [7] ${XYC_BITRATE}  : ${XYC_DEFAULT}" 
+      echo " [9] ${XYC_BITRATE}  : ${XYC_DEFAULT}" 
     else
-      echo " [7] ${XYC_BITRATE}  : $BITVIEW"
+      echo " [9] ${XYC_BITRATE}  : $BITVIEW"
     fi
     if [ $BIG_FILE == ${XYC_Y} ]; then 
-      echo " [8] ${XYC_BIG_FILE}    : ${XYC_YES}" 
+      echo " [10] ${XYC_BIG_FILE}   : ${XYC_YES}" 
     else
-      echo " [8] ${XYC_BIG_FILE}    : ${XYC_NO}"
+      echo " [10] ${XYC_BIG_FILE}   : ${XYC_NO}"
     fi
-    echo " [9] ${XYC_SAVE_AND_BACK}"
+    echo " [11] ${XYC_SAVE_AND_BACK}"
 
     read -p "${XYC_SELECT_OPTION}: " REPLY
     case $REPLY in
       1) getNRInput; clear;;
       2) getAAAInput; clear;;
-      3) getShadowInput; clear;;
-      4) getSharpnessInput; clear;;
-      5) getYiMaxInput; clear;;
-      6) getVideoResolutionInput; clear;;
-      7) getVideoBitrateInput; clear;;
-      8) getBigFileInput; clear;;
-      9) clear; return 0;;
+      3) getGammaInput; clear;;
+      4) getAutoKneeInput; clear;;
+      5) getVibSatInput; clear;;
+      6) getSharpnessInput; clear;;
+      7) getGoPrawnInput; clear;;
+      8) getVideoResolutionInput; clear;;
+      9) getVideoBitrateInput; clear;;
+      10) getBigFileInput; clear;;
+      11) clear; return 0;;
       *) clear; echo "$XYC_INVALID_CHOICE"; REPLY=0;;
     esac
   done
@@ -502,8 +527,11 @@ parseCommandLine ()
       -w) AWB=$2; shift;;
       -n) NR=$2; shift;;
       -a) AAA=$2; shift;;
+      -g) GAMMA=$2; shift;;
+      -k) AUTOKNEE=$2; shift;;
+      -s) VIBSAT=$2; shift;;
       -r) RAW=$2; shift;;
-      -y) YIMAX=$2; shift;;
+      -p) PRAWN=$2; shift;;
       -b) BIG_FILE=$2; shift;;
       -u) INC_USER=$2; shift;;
        *) echo "${XYC_UNKNOWN_OPTION}: $key"; shift;;
@@ -544,14 +572,18 @@ parseExistingAutoexec ()
     COR=`grep "#Sharpness:" $AASH | cut -d " " -f 4`
   fi
 
-  grep -q "#YiMAX script" $AASH 2>/dev/null
-  if [ $? -eq 0 ]; then YIMAX=${XYC_Y}; fi
+  grep -q "load d:\goprawn.config" $AASH 2>/dev/null
+  if [ $? -eq 0 ]; then PRAWN=${XYC_Y}; fi
 
   grep -q "t ia2 -3a" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then AAA=${XYC_Y}; fi
 
-  grep -q "t ia2 -adj autoknee" $AASH 2>/dev/null
-  if [ $? -eq 0 ]; then SHADOW=${XYC_Y}; fi
+  GAMMA=`grep "t ia2 -adj gamma" $AASH 2>/dev/null | cut -d " " -f 5`
+  
+  AUTOKNEE=`grep "t ia2 -adj autoknee" $AASH 2>/dev/null | cut -d " " -f 5`
+  
+  grep -q "t ia2 -adj ev" $AASH 2>/dev/null
+  if [ $? -eq 0 ]; then VIBSAT=${XYC_Y}; fi
 
   grep -q "writeb 0xC06CC426 0x28" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=1; FPS=1; fi
@@ -614,9 +646,9 @@ parseExistingAutoexec ()
 resetCameraSettings ()
 {
   unset EXP ISO AWB RAW
-  unset NR AAA RES FPS BIT BIG_FILE 
+  unset NR AAA GAMMA RES FPS BIT BIG_FILE 
   unset SHR FIR COR
-  unset YIMAX SHADOW
+  unset PRAWN AUTOKNEE VIBSAT
   unset AUTAN
   unset INC_USER
   setMissingValues
@@ -632,9 +664,9 @@ setMissingValues ()
   if [[ "$RAW" != ${XYC_Y} && "$RAW" != ${XYC_N} ]]; then RAW=${XYC_N}; fi
   if [[ "$BIG_FILE" != ${XYC_Y} && "$BIG_FILE" != ${XYC_N} ]]; then BIG_FILE=${XYC_N}; fi
   if [[ "${INC_USER}" != ${XYC_Y} && "${INC_USER}" != ${XYC_N} ]]; then INC_USER=${XYC_N}; fi
-  if [[ "$YIMAX" != ${XYC_Y} && "$YIMAX" != ${XYC_N} ]]; then YIMAX=${XYC_N}; fi
-  if [[ "$AAA" != ${XYC_Y} && "$AAA" != ${XYC_N} ]]; then AAA=${XYC_N}; fi  
-  if [[ "$SHADOW" != ${XYC_Y} && "$SHADOW" != ${XYC_N} ]]; then SHADOW=${XYC_N}; fi
+  if [[ "$PRAWN" != ${XYC_Y} && "$PRAWN" != ${XYC_N} ]]; then PRAWN=${XYC_N}; fi
+  if [[ "$AAA" != ${XYC_Y} && "$AAA" != ${XYC_N} ]]; then AAA=${XYC_N}; fi 
+  if [[ "$VIBSAT" != ${XYC_Y} && "$VIBSAT" != ${XYC_N} ]]; then VIBSAT=${XYC_N}; fi    
   if [ -z "$RES" ]; then RES=0; FPS=2; else setRESView; fi
   setBITView
 }
@@ -807,7 +839,7 @@ getNRInput ()
   echo " * (2) NR 500                      * "
   echo " * (3) NR 2048                     * "
   echo " * (4) ${XYC_MAX_NR}                      * "
-  echo " * (5) ${XYC_CUSTOM_NR}                   * "  
+  echo " * (5) ${XYC_CUSTOM}                      * "  
   echo " *********************************** "
   local REPLY
   read -p "${XYC_SELECT_OPTION}: " REPLY
@@ -826,7 +858,9 @@ getCustomNRInput ()
   clear 
   local REPLY=$NR
   read -p "${XYC_CUSTOM_NR_PROMPT} [${XYC_ENTER}=$NR]: " REPLY
-  if [ $REPLY -le 16383 -a $REPLY -ge 0 ]; then NR=$REPLY; fi
+  if [ $REPLY ]; then
+    if [[ $REPLY -le 16383 && $REPLY -ge 0 ]]; then NR=$REPLY; fi
+  fi
 }
 
 getAAAInput ()
@@ -837,12 +871,68 @@ getAAAInput ()
   if [[ "$REPLY" == ${XYC_Y} || "$REPLY" == ${XYC_N} ]]; then AAA=$REPLY; fi
 }
 
-getShadowInput ()
+getGammaInput ()
+{
+  clear
+  echo " *********** ${XYC_GAMMA_MENU} ************ "
+  echo " * (0) ${XYC_DEFAULT}                     * "
+  echo " * (1) Gamma 220                   * "
+  echo " * (2) Gamma 255                   * "
+  echo " * (3) ${XYC_CUSTOM}                      * "  
+  echo " *********************************** "
+  local REPLY
+  read -p "${XYC_SELECT_OPTION}: " REPLY
+  case $REPLY in 
+    0) unset GAMMA;;
+    1) GAMMA=220;; 
+    2) GAMMA=255;; 
+    *) getCustomGammaInput;;
+  esac
+}
+
+getCustomGammaInput ()
+{
+  clear
+  local REPLY=$GAMMA
+  read -p "${XYC_GAMMA_PROMPT} [${XYC_ENTER}=$GAMMA]: " REPLY
+  if [ $REPLY ]; then
+    if [[ $REPLY -le 255 && $REPLY -ge 0 ]]; then GAMMA=$REPLY; fi
+  fi
+}
+
+getAutoKneeInput ()
+{
+  clear
+  echo " ********* ${XYC_AUTOKNEE_MENU} ********** "
+  echo " * (0) ${XYC_DEFAULT}                     * "
+  echo " * (1) AutoKnee 255                * "
+  echo " * (2) ${XYC_CUSTOM}                      * "  
+  echo " *********************************** "
+  local REPLY
+  read -p "${XYC_SELECT_OPTION}: " REPLY
+  case $REPLY in 
+    0) unset AUTOKNEE;;
+    1) AUTOKNEE=255;; 
+    *) getCustomAutoKneeInput;;
+  esac
+}
+
+getCustomAutoKneeInput ()
+{
+  clear
+  local REPLY=$AUTOKNEE
+  read -p "${XYC_AUTOKNEE_PROMPT} [${XYC_ENTER}=$AUTOKNEE]: " REPLY
+  if [ $REPLY ]; then
+    if [[ $REPLY -le 255 && $REPLY -ge 0 ]]; then AUTOKNEE=$REPLY; fi
+  fi
+}
+
+getVibSatInput ()
 {
   clear 
-  local REPLY=$SHADOW
-  read -p "${XYC_SHADOW_PROMPT} [${XYC_ENTER}=$SHADOW]: " REPLY
-  if [[ "$REPLY" == ${XYC_Y} || "$REPLY" == ${XYC_N} ]]; then SHADOW=$REPLY; fi
+  local REPLY=$VIBSAT
+  read -p "${XYC_VIBSAT_PROMPT} [${XYC_ENTER}=$VIBSAT]: " REPLY
+  if [[ "$REPLY" == ${XYC_Y} || "$REPLY" == ${XYC_N} ]]; then VIBSAT=$REPLY; fi
 }
 
 getRawInput ()
@@ -902,12 +992,12 @@ getSharpCorInput ()
   fi
 }
 
-getYiMaxInput ()
+getGoPrawnInput ()
 {
   clear 
-  local REPLY=$YIMAX
-  read -p "${XYC_YIMAX_PROMPT} [${XYC_ENTER}=$YIMAX]: " REPLY
-  if [[ "$REPLY" == ${XYC_Y} || "$REPLY" == ${XYC_N} ]]; then YIMAX=$REPLY; fi
+  local REPLY=$PRAWN
+  read -p "${XYC_PRAWN_PROMPT} [${XYC_ENTER}=$PRAWN]: " REPLY
+  if [[ "$REPLY" == ${XYC_Y} || "$REPLY" == ${XYC_N} ]]; then PRAWN=$REPLY; fi
 }
 
 getVideoResolutionInput ()
@@ -1212,28 +1302,35 @@ writeAutoexec ()
     fi
   fi
 
-  if [ "$YIMAX" == ${XYC_Y} ]; then
-    echo "#YiMAX script by nutsey" >> $OUTFILE
-    echo "t ia2 -adj ev 10 0 60 0 0 140 0" >> $OUTFILE
+  if [ "$VIBSAT" == ${XYC_Y} ]; then
+    echo "#vibrance/saturation adjustments" >> $OUTFILE
+    echo "t ia2 -adj ev 0 0 140 0 0 150 0" >> $OUTFILE
     echo "#enable 14 scene mode" >> $OUTFILE
     echo "t cal -sc 14" >> $OUTFILE
-    echo "#Set JPEG quality to 100%" >> $OUTFILE
+    echo "#set JPEG quality to 100%" >> $OUTFILE
     echo "writeb 0xC0BC205B 0x64" >> $OUTFILE
     echo "" >> $OUTFILE
   fi
 
-  if [ "$SHADOW" == ${XYC_Y} ]; then
-    echo "#this makes blacks not crushed" >> $OUTFILE
-    echo "t ia2 -adj l_expo 163" >> $OUTFILE
+  if [[ ! -z $AUTOKNEE ]]; then
     echo "#shadow/highlight clipping adjustments" >> $OUTFILE
-    echo "t ia2 -adj autoknee 255" >> $OUTFILE
-    echo "#set gamma level" >> $OUTFILE
-    echo "t ia2 -adj gamma 220" >> $OUTFILE
+    echo "#this makes blacks not crushed" >> $OUTFILE
+    echo "#set long exposure level [0~255]" >> $OUTFILE
+    echo "t ia2 -adj l_expo 163" >> $OUTFILE
+    echo "#this gets back the highlights" >> $OUTFILE
+    echo "#set Auto Knee level [0~255]" >> $OUTFILE
+    echo "t ia2 -adj autoknee $AUTOKNEE" >> $OUTFILE
     echo "" >> $OUTFILE
   fi
-
+  
+  if [[ ! -z $GAMMA ]]; then
+    echo "#set gamma level [0~255]" >> $OUTFILE
+    echo "t ia2 -adj gamma $GAMMA" >> $OUTFILE
+    echo "" >> $OUTFILE
+  fi
+  
   if [[ $ISO -ne 0 || $EXP -ne 0 ]]; then
-    echo "#set ISO and exposure" >> $OUTFILE
+    echo "#set ISO and Exposure" >> $OUTFILE
     echo "t ia2 -ae exp $ISO $EXP" >> $OUTFILE
     echo "" >> $OUTFILE
   fi
@@ -1245,7 +1342,7 @@ writeAutoexec ()
   fi
 
   if [[ ! -z $NR ]]; then
-    echo "#set noise reduction" >> $OUTFILE
+    echo "#set Noise Reduction" >> $OUTFILE
     echo "# tidx: [ev_idx][nf_idx][shutter_idx], -1 disable" >> $OUTFILE
     echo "# [nf_idx]: 0-16383, 0 no noise (sharper video)" >> $OUTFILE
     echo "t ia2 -adj tidx -1 $NR -1" >> $OUTFILE
@@ -1258,7 +1355,8 @@ writeAutoexec ()
     echo "t is2 -shp mode $SHR" >> $OUTFILE
     echo "t is2 -shp fir $FIR 0 0 0 0 0 0" >> $OUTFILE
     echo "t is2 -shp max_change 5 5" >> $OUTFILE
-    echo "t is2 -shp cor d:\coring.config" >> $OUTFILE
+    echo "t is2 -shp cor d:\sharpening.config" >> $OUTFILE
+    echo "sleep 1" >> $OUTFILE
     echo "" >> $OUTFILE
 
     echo "Writing $CORCONF"
@@ -1415,13 +1513,12 @@ writeAutoexec ()
     echo "" >> $OUTFILE
   fi
 
-  if [ "$YIMAX" == ${XYC_Y} ]; then
-    echo "sleep 9" >> $OUTFILE
+  if [ "$PRAWN" == ${XYC_Y} ]; then
     echo "#load GoPrawn config" >> $OUTFILE
     echo "t cal -ituner load d:\goprawn.config" >> $OUTFILE
     echo "sleep 1" >> $OUTFILE
     echo "" >> $OUTFILE
-
+    
     echo "Writing $PRAWNCONF"
     #Write any necessary script commands to goprawn.config
     echo "# Generated by XYC ${VERS}, `date`" > $PRAWNCONF
