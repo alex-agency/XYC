@@ -33,11 +33,12 @@
 #
 # Changelog:
 #
-# 0.3.4 (Nov 2015) - Ability to set bitrates for all resolutions
-# by Alex          - Support for 24fps and 48fps video 
-#                  - Fixed 2560x1440 resolution, now it's upscaling from 2304x1296 
+# 0.3.4 (Nov 2015) - Added ability to set bitrates for all resolutions
+# by Alex          - Added new video frequencies: 24fps, 48fps
+#                  - Resolved 2560x1440 resolution, it's upscaling from 2304x1296 
 #                  - Increased script performance
-#                  - Fixed issue with XYC Update 
+#                  - Fixed issue in XYC Update
+#                  - Fixed issue in HDR scripts
 # 0.3.3 (Oct 2015) - Support latest 1.2.13 firmware
 # by Alex          - Added support file weight limit to 4GB
 #                  - Added 1440p resolution for test purpose
@@ -207,7 +208,7 @@ welcome ()
   clear
   echo ""
   echo " *  Xiaomi Yi Configurator  * "
-  echo " *  11/27/2015  ${VERS}  * "
+  echo " *  11/28/2015  ${VERS}  * "
   echo ""
 }
 
@@ -233,7 +234,7 @@ showMainMenu ()
       0) clear; cat $AASH;;
       1) showPhotoSettingsMenu; writeAutoexec;;
       2) showVideoSettingsMenu; writeAutoexec;;
-      3) showHDRMenu; writeAutoexec $AASH "hdr";;
+      3) showHDRMenu; writeAutoexec;;
       4) getIncludeUserSettings; writeAutoexec;;
       5) removeAutoexec; resetCameraSettings;;
       6) showSpaceUsage;;
@@ -1438,8 +1439,7 @@ writeAutoexec ()
     echo "chroma_filt.enable 0" >> $PRAWNCONF
   fi
 
-  #If requested, write hdr script
-  if [[ "$SCRIPT_TYPE" == "hdr" && ! -z $AUTAN ]]; then
+  if [[ ! -z $AUTAN ]]; then
     echo "#HDR script by nutsey" >> $OUTFILE
     echo "sleep 7" >> $OUTFILE
     
@@ -1460,6 +1460,7 @@ writeAutoexec ()
     echo "t ia2 -ae still_shutter $HDR1" >> $OUTFILE
     echo "sleep 1" >> $OUTFILE
     echo "t app key shutter" >> $OUTFILE
+    echo "t app key shutter_rel" >> $OUTFILE 
     if [ $AUTAN -eq 2 ]; then
       echo "sleep 18" >> $OUTFILE
     else
@@ -1471,30 +1472,35 @@ writeAutoexec ()
       echo "t ia2 -ae still_shutter 1100" >> $OUTFILE
       echo "sleep 1" >> $OUTFILE
       echo "t app key shutter" >> $OUTFILE
+      echo "t app key shutter_rel" >> $OUTFILE 
       echo "sleep 2" >> $OUTFILE
       
       echo "#1/245" >> $OUTFILE
       echo "t ia2 -ae still_shutter 1400" >> $OUTFILE
       echo "sleep 1" >> $OUTFILE
       echo "t app key shutter" >> $OUTFILE
+      echo "t app key shutter_rel" >> $OUTFILE 
       echo "sleep 2" >> $OUTFILE
     elif [ $AUTAN -eq 2 ]; then
       echo "#5.4" >> $OUTFILE
       echo "t ia2 -ae still_shutter 70" >> $OUTFILE
       echo "sleep 1" >> $OUTFILE
       echo "t app key shutter" >> $OUTFILE
+      echo "t app key shutter_rel" >> $OUTFILE 
       echo "sleep 15" >> $OUTFILE
       
       echo "#3.5" >> $OUTFILE
       echo "t ia2 -ae still_shutter 150" >> $OUTFILE
       echo "sleep 1" >> $OUTFILE
       echo "t app key shutter" >> $OUTFILE
+      echo "t app key shutter_rel" >> $OUTFILE 
       echo "sleep 13" >> $OUTFILE
     fi
 
     echo "t ia2 -ae still_shutter $HDR2" >> $OUTFILE
     echo "sleep 1" >> $OUTFILE
     echo "t app key shutter" >> $OUTFILE
+    echo "t app key shutter_rel" >> $OUTFILE 
     if [ $AUTAN -eq 2 ]; then
       echo "sleep 12" >> $OUTFILE
     else
@@ -1506,18 +1512,21 @@ writeAutoexec ()
       echo "t ia2 -ae still_shutter 1750" >> $OUTFILE
       echo "sleep 1" >> $OUTFILE
       echo "t app key shutter" >> $OUTFILE
+      echo "t app key shutter_rel" >> $OUTFILE 
       echo "sleep 2" >> $OUTFILE
     elif [ $AUTAN -eq 2 ]; then
       echo "#1.0" >> $OUTFILE
       echo "t ia2 -ae still_shutter 500" >> $OUTFILE
       echo "sleep 1" >> $OUTFILE
       echo "t app key shutter" >> $OUTFILE
+      echo "t app key shutter_rel" >> $OUTFILE 
       echo "sleep 12" >> $OUTFILE
     fi
 
     echo "t ia2 -ae still_shutter $HDR3" >> $OUTFILE
     echo "sleep 1" >> $OUTFILE
     echo "t app key shutter" >> $OUTFILE
+    echo "t app key shutter_rel" >> $OUTFILE 
     if [ $AUTAN -eq 2 ]; then
       echo "sleep 10" >> $OUTFILE
     else
