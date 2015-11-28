@@ -124,7 +124,7 @@ XYC_OFF="Off"
 XYC_AUTO="Auto"
 XYC_ENTER="Enter"
 XYC_CHOOSE="Choose"
-XYC_ENTER_AWB_PROMPT="Auto-Whitebalance (y/n)"
+XYC_ENTER_AWB_PROMPT="Auto White Balance (y/n)"
 XYC_CREATE_RAW_PROMPT="Create RAW files (y/n)"
 XYC_RESTART_NOW_PROMPT="Restart camera now (y/n)"
 XYC_REBOOTING_NOW="Rebooting now"
@@ -191,7 +191,9 @@ XYC_UPDATE_ERROR="For download update you should have it."
 XYC_UPDATE_COMPLETE="Update complete."
 XYC_UPDATE_MANUAL="For download script manually browse to:"
 XYC_CREATE_FILE="First create"
-XYC_BITRATE="All Bitrate"
+XYC_BITRATE="Bitrate all"
+XYC_AAA="AAA"
+XYC_AAA_PROMPT="AAA function: set AE/AWB/ADJ locks (y/n)"
 
 #If language file exists, source it to override English language UI strings
 if [[ -s "$LANGUAGE_FILE" && -r "$LANGUAGE_FILE" ]]; then
@@ -269,48 +271,38 @@ showPhotoSettingsMenu ()
     else 
       echo " [3] ${XYC_AWB}          : ${XYC_OFF}"
     fi
-    if [ -z $NR ]; then
-      echo " [4] ${XYC_NR}           : ${XYC_DEFAULT}"
-    elif [ $NR -eq -1 ]; then 
-      echo " [4] ${XYC_NR}           : ${XYC_DISABLE}"
-    elif [ $NR -eq 16383 ]; then 
-      echo " [4] ${XYC_NR}           : ${XYC_MAX}"
-    else
-      echo " [4] ${XYC_NR}           : $NR" 
-    fi
     if [ $SHADOW == ${XYC_Y} ]; then 
-      echo " [5] ${XYC_SHADOW}   : ${XYC_YES}"
+      echo " [4] ${XYC_SHADOW}   : ${XYC_YES}"
     else 
-      echo " [5] ${XYC_SHADOW}   : ${XYC_NO}" 
+      echo " [4] ${XYC_SHADOW}   : ${XYC_NO}" 
     fi
     if [[ ! -z $SHR ]]; then 
-      echo " [6] ${XYC_SHARPNESS}    : $SHR $FIR $COR"
+      echo " [5] ${XYC_SHARPNESS}    : $SHR $FIR $COR"
     else 
-      echo " [6] ${XYC_SHARPNESS}    : ${XYC_DEFAULT}" 
+      echo " [5] ${XYC_SHARPNESS}    : ${XYC_DEFAULT}" 
     fi
     if [ $YIMAX == ${XYC_Y} ]; then 
-      echo " [7] ${XYC_YIMAX_NUTSEY} : ${XYC_YES}" 
+      echo " [6] ${XYC_YIMAX_NUTSEY} : ${XYC_YES}" 
     else 
-      echo " [7] ${XYC_YIMAX_NUTSEY} : ${XYC_NO}"
+      echo " [6] ${XYC_YIMAX_NUTSEY} : ${XYC_NO}"
     fi
     if [ $RAW == ${XYC_Y} ]; then 
-      echo " [8] ${XYC_CREATE_RAW}   : ${XYC_YES}" 
+      echo " [7] ${XYC_CREATE_RAW}   : ${XYC_YES}" 
     else 
-      echo " [8] ${XYC_CREATE_RAW}   : ${XYC_NO}"
+      echo " [7] ${XYC_CREATE_RAW}   : ${XYC_NO}"
     fi
-    echo " [9] ${XYC_SAVE_AND_BACK}"
+    echo " [8] ${XYC_SAVE_AND_BACK}"
 
     read -p "${XYC_SELECT_OPTION}: " REPLY
     case $REPLY in
       1) getExposureInput; clear;;
       2) getISOInput; clear;;
       3) getAWBInput; clear;;
-      4) getNRInput; clear;;
-      5) getShadowInput; clear;;
-      6) getSharpnessInput; clear;;
-      7) getYiMaxInput; clear;;
-      8) getRawInput; clear;;
-      9) clear; return 0;;
+      4) getShadowInput; clear;;
+      5) getSharpnessInput; clear;;
+      6) getYiMaxInput; clear;;
+      7) getRawInput; clear;;
+      8) clear; return 0;;
       *) clear; echo "$XYC_INVALID_CHOICE"; REPLY=0;;
     esac
   done
@@ -322,19 +314,19 @@ showVideoSettingsMenu ()
   while [ $REPLY -gt -1 ]
   do
     echo "    == ${XYC_VIDEO_SETTINGS_MENU} =="
-    if [ $AWB == ${XYC_Y} ]; then 
-      echo " [1] ${XYC_AWB}          : ${XYC_ON}" 
-    else 
-      echo " [1] ${XYC_AWB}          : ${XYC_OFF}"
-    fi
     if [ -z $NR ]; then
-      echo " [2] ${XYC_NR}           : ${XYC_DEFAULT}"
+      echo " [1] ${XYC_NR}           : ${XYC_DEFAULT}"
     elif [ $NR -eq -1 ]; then 
-      echo " [2] ${XYC_NR}           : ${XYC_DISABLE}"
+      echo " [1] ${XYC_NR}           : ${XYC_DISABLE}"
     elif [ $NR -eq 16383 ]; then 
-      echo " [2] ${XYC_NR}           : ${XYC_MAX}"
+      echo " [1] ${XYC_NR}           : ${XYC_MAX}"
     else
-      echo " [2] ${XYC_NR}           : $NR" 
+      echo " [1] ${XYC_NR}           : $NR" 
+    fi
+    if [ $AAA == ${XYC_Y} ]; then 
+      echo " [2] ${XYC_AAA}          : ${XYC_YES}"
+    else 
+      echo " [2] ${XYC_AAA}          : ${XYC_NO}" 
     fi
     if [ $SHADOW == ${XYC_Y} ]; then 
       echo " [3] ${XYC_SHADOW}   : ${XYC_YES}"
@@ -370,8 +362,8 @@ showVideoSettingsMenu ()
 
     read -p "${XYC_SELECT_OPTION}: " REPLY
     case $REPLY in
-      1) getAWBInput; clear;;
-      2) getNRInput; clear;;
+      1) getNRInput; clear;;
+      2) getAAAInput; clear;;
       3) getShadowInput; clear;;
       4) getSharpnessInput; clear;;
       5) getYiMaxInput; clear;;
@@ -509,9 +501,9 @@ parseCommandLine ()
       -e) EXP=$2; shift;;
       -w) AWB=$2; shift;;
       -n) NR=$2; shift;;
+      -a) AAA=$2; shift;;
       -r) RAW=$2; shift;;
       -y) YIMAX=$2; shift;;
-      -s) SHADOW=$2; shift;;
       -b) BIG_FILE=$2; shift;;
       -u) INC_USER=$2; shift;;
        *) echo "${XYC_UNKNOWN_OPTION}: $key"; shift;;
@@ -534,7 +526,7 @@ parseExistingAutoexec ()
   grep -q "t app test debug_dump 14" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RAW=${XYC_Y}; fi
 
-  grep -q "#UserSettings: y" $AASH 2>/dev/null
+  grep -q "#User settings" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then INC_USER=${XYC_Y}; fi
 
   grep -q "#HDRParams:" $AASH 2>/dev/null
@@ -552,8 +544,11 @@ parseExistingAutoexec ()
     COR=`grep "#Sharpness:" $AASH | cut -d " " -f 4`
   fi
 
-  grep -q "#YiMAX-movie script" $AASH 2>/dev/null
+  grep -q "#YiMAX script" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then YIMAX=${XYC_Y}; fi
+
+  grep -q "t ia2 -3a" $AASH 2>/dev/null
+  if [ $? -eq 0 ]; then AAA=${XYC_Y}; fi
 
   grep -q "t ia2 -adj autoknee" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then SHADOW=${XYC_Y}; fi
@@ -612,16 +607,17 @@ parseExistingAutoexec ()
   grep -q "0x4248" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then BIT="0x4248"; fi
 
-
   grep -q "writew 0xC03A8520 0x2004" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then BIG_FILE=${XYC_Y}; fi
 }
 
 resetCameraSettings ()
 {
-  unset RES FPS BIT
-  unset AWB NR SHR FIR COR YIMAX SHADOW BIG_FILE
-  unset ISO EXP RAW
+  unset EXP ISO AWB RAW
+  unset NR AAA RES FPS BIT BIG_FILE 
+  unset SHR FIR COR
+  unset YIMAX SHADOW
+  unset AUTAN
   unset INC_USER
   setMissingValues
   promptToRestart
@@ -637,6 +633,7 @@ setMissingValues ()
   if [[ "$BIG_FILE" != ${XYC_Y} && "$BIG_FILE" != ${XYC_N} ]]; then BIG_FILE=${XYC_N}; fi
   if [[ "${INC_USER}" != ${XYC_Y} && "${INC_USER}" != ${XYC_N} ]]; then INC_USER=${XYC_N}; fi
   if [[ "$YIMAX" != ${XYC_Y} && "$YIMAX" != ${XYC_N} ]]; then YIMAX=${XYC_N}; fi
+  if [[ "$AAA" != ${XYC_Y} && "$AAA" != ${XYC_N} ]]; then AAA=${XYC_N}; fi  
   if [[ "$SHADOW" != ${XYC_Y} && "$SHADOW" != ${XYC_N} ]]; then SHADOW=${XYC_N}; fi
   if [ -z "$RES" ]; then RES=0; FPS=2; else setRESView; fi
   setBITView
@@ -830,6 +827,14 @@ getCustomNRInput ()
   local REPLY=$NR
   read -p "${XYC_CUSTOM_NR_PROMPT} [${XYC_ENTER}=$NR]: " REPLY
   if [ $REPLY -le 16383 -a $REPLY -ge 0 ]; then NR=$REPLY; fi
+}
+
+getAAAInput ()
+{
+  clear 
+  local REPLY=$AAA
+  read -p "${XYC_AAA_PROMPT} [${XYC_ENTER}=$AAA]: " REPLY
+  if [[ "$REPLY" == ${XYC_Y} || "$REPLY" == ${XYC_N} ]]; then AAA=$REPLY; fi
 }
 
 getShadowInput ()
@@ -1189,13 +1194,8 @@ writeAutoexec ()
   echo "${XYC_WRITING} $OUTFILE"
 
   #Write any necessary script commands to autoexec.ash
-  echo "#Script created `date`" > $OUTFILE
-  echo "#VideoResolution: $RES $FPS" >> $OUTFILE
-  echo "#CameraParams: $AWB $NR $YIMAX $SHADOW $BIG_FILE" >> $OUTFILE
-  echo "#PhotoParams: $ISO $EXP $RAW" >> $OUTFILE
-  echo "#Sharpness: $SHR $FIR $COR " >> $OUTFILE  
-  echo "#UserSettings: $INC_USER" >> $OUTFILE
-  echo "#HDRParams: $AUTAN $HDR1 $HDR2 $HDR3" >> $OUTFILE
+  echo "# Generated by XYC ${VERS}, `date`" > $OUTFILE
+  echo "# https://github.com/alex-agency/XYC" >> $OUTFILE
   echo "" >> $OUTFILE
 
   #Add user settings first, so that changes made by this script overwrite
@@ -1215,8 +1215,6 @@ writeAutoexec ()
   if [ "$YIMAX" == ${XYC_Y} ]; then
     echo "#YiMAX script by nutsey" >> $OUTFILE
     echo "t ia2 -adj ev 10 0 60 0 0 140 0" >> $OUTFILE
-    echo "#this makes blacks not crushed" >> $OUTFILE
-    echo "t ia2 -adj l_expo 163" >> $OUTFILE
     echo "#enable 14 scene mode" >> $OUTFILE
     echo "t cal -sc 14" >> $OUTFILE
     echo "#Set JPEG quality to 100%" >> $OUTFILE
@@ -1225,6 +1223,8 @@ writeAutoexec ()
   fi
 
   if [ "$SHADOW" == ${XYC_Y} ]; then
+    echo "#this makes blacks not crushed" >> $OUTFILE
+    echo "t ia2 -adj l_expo 163" >> $OUTFILE
     echo "#shadow/highlight clipping adjustments" >> $OUTFILE
     echo "t ia2 -adj autoknee 255" >> $OUTFILE
     echo "#set gamma level" >> $OUTFILE
@@ -1233,25 +1233,28 @@ writeAutoexec ()
   fi
 
   if [[ $ISO -ne 0 || $EXP -ne 0 ]]; then
-    echo "#Set ISO and exposure" >> $OUTFILE
+    echo "#set ISO and exposure" >> $OUTFILE
     echo "t ia2 -ae exp $ISO $EXP" >> $OUTFILE
     echo "" >> $OUTFILE
   fi
 
   if [ "$AWB" == ${XYC_N} ]; then
-    echo "#Set auto-whitebalance" >> $OUTFILE
+    echo "#set Auto White Balance" >> $OUTFILE
     echo "t ia2 -awb off" >> $OUTFILE
     echo "" >> $OUTFILE
   fi
 
   if [[ ! -z $NR ]]; then
-    echo "#Noise Reduction" >> $OUTFILE
+    echo "#set noise reduction" >> $OUTFILE
+    echo "# tidx: [ev_idx][nf_idx][shutter_idx], -1 disable" >> $OUTFILE
+    echo "# [nf_idx]: 0-16383, 0 no noise (sharper video)" >> $OUTFILE
     echo "t ia2 -adj tidx -1 $NR -1" >> $OUTFILE
     echo "" >> $OUTFILE
   fi
 
   if [[ ! -z $SHR ]]; then
-    echo "#Sharpness" >> $OUTFILE
+    echo "#Sharpness: $SHR $FIR $COR " >> $OUTFILE  
+    echo "#set sharpness" >> $OUTFILE
     echo "t is2 -shp mode $SHR" >> $OUTFILE
     echo "t is2 -shp fir $FIR 0 0 0 0 0 0" >> $OUTFILE
     echo "t is2 -shp max_change 5 5" >> $OUTFILE
@@ -1259,7 +1262,10 @@ writeAutoexec ()
     echo "" >> $OUTFILE
 
     echo "Writing $CORCONF"
-    echo "$COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR" > $CORCONF
+    echo "# Generated by XYC ${VERS}, `date`" > $CORCONF
+    echo "# https://github.com/alex-agency/XYC" >> $CORCONF
+    echo "# Sharpening Coring script" >> $CORCONF
+    echo "$COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR" >> $CORCONF
   fi
 
   if [ $RES -eq 1 ]; then
@@ -1346,7 +1352,7 @@ writeAutoexec ()
   fi
   
   if [[ ! -z $BIT && $BIT -ne 0 ]]; then
-    echo "#set all resolutions $BITVIEW bitrate" >> $OUTFILE
+    echo "#set $BITVIEW bitrate for all resolutions" >> $OUTFILE
     echo "#1280x720 24fps" >> $OUTFILE
     echo "writew 0xC05C25D2 $BIT" >> $OUTFILE
     echo "#1280x720 30fps" >> $OUTFILE
@@ -1387,14 +1393,25 @@ writeAutoexec ()
   fi
 
   if [ "$RAW" == ${XYC_Y} ]; then
-    echo "#Create RAW files" >> $OUTFILE
+    echo "#create RAW files" >> $OUTFILE
     echo "t app test debug_dump 14" >> $OUTFILE
     echo "" >> $OUTFILE
   fi
 
   if [ "$BIG_FILE" == ${XYC_Y} ]; then
-    echo "#Set file weight limit to 4GB" >> $OUTFILE
+    echo "#set 4GB file weight limit" >> $OUTFILE
     echo "writew 0xC03A8520 0x2004" >> $OUTFILE
+    echo "" >> $OUTFILE
+  fi
+  
+  if [ "$AAA" == ${XYC_Y} ]; then
+    echo "#set AAA function" >> $OUTFILE
+    echo "# -3a [ae][awb][af][adj]: turn on/off ae/awb/af/adj" >> $OUTFILE
+    echo "#  ae = [0|1], 0:on 1:off AE" >> $OUTFILE 
+    echo "#  awb = [0|1], 0:on 1:off AWB" >> $OUTFILE 
+    echo "#  af  = [0|1], 0:on 1:off AF" >> $OUTFILE 
+    echo "#  adj = [0|1], 0:on 1:off ADJ" >> $OUTFILE
+    echo "t ia2 -3a 1 1 0 1" >> $OUTFILE
     echo "" >> $OUTFILE
   fi
 
@@ -1403,14 +1420,13 @@ writeAutoexec ()
     echo "#load GoPrawn config" >> $OUTFILE
     echo "t cal -ituner load d:\goprawn.config" >> $OUTFILE
     echo "sleep 1" >> $OUTFILE
-    echo "#fix ae/awb/adj locks" >> $OUTFILE
-    echo "t ia2 -3a 1 1 0 1" >> $OUTFILE
     echo "" >> $OUTFILE
 
     echo "Writing $PRAWNCONF"
     #Write any necessary script commands to goprawn.config
-    echo "#Script created `date`" > $PRAWNCONF
-    echo "#GoPrawn config by nutsey" >> $PRAWNCONF
+    echo "# Generated by XYC ${VERS}, `date`" > $PRAWNCONF
+    echo "# https://github.com/alex-agency/XYC" >> $PRAWNCONF
+    echo "# GoPrawn config by nutsey" >> $PRAWNCONF
     echo "system.user_mode Normal" >> $PRAWNCONF
     echo "system.tuning_mode IMG_MODE_VIDEO" >> $PRAWNCONF
     echo "system.tuning_mode_ext SINGLE_SHOT" >> $PRAWNCONF
@@ -1440,16 +1456,15 @@ writeAutoexec ()
   fi
 
   if [[ ! -z $AUTAN ]]; then
+    echo "#HDRParams: $AUTAN $HDR1 $HDR2 $HDR3" >> $OUTFILE
     echo "#HDR script by nutsey" >> $OUTFILE
     echo "sleep 7" >> $OUTFILE
-    
     echo "#beep" >> $OUTFILE
     echo "sleep 1" >> $OUTFILE
     echo "t pwm 1 enable" >> $OUTFILE
     echo "sleep 1" >> $OUTFILE
     echo "t pwm 1 disable" >> $OUTFILE
     echo "sleep 1" >> $OUTFILE
-    
     echo "#beep" >> $OUTFILE
     echo "sleep 1" >> $OUTFILE
     echo "t pwm 1 enable" >> $OUTFILE
@@ -1466,37 +1481,29 @@ writeAutoexec ()
     else
       echo "sleep 3" >> $OUTFILE
     fi
-
     if [ $AUTAN -eq 1 ]; then
-      echo "#1/50" >> $OUTFILE
       echo "t ia2 -ae still_shutter 1100" >> $OUTFILE
       echo "sleep 1" >> $OUTFILE
       echo "t app key shutter" >> $OUTFILE
       echo "t app key shutter_rel" >> $OUTFILE 
       echo "sleep 2" >> $OUTFILE
-      
-      echo "#1/245" >> $OUTFILE
       echo "t ia2 -ae still_shutter 1400" >> $OUTFILE
       echo "sleep 1" >> $OUTFILE
       echo "t app key shutter" >> $OUTFILE
       echo "t app key shutter_rel" >> $OUTFILE 
       echo "sleep 2" >> $OUTFILE
     elif [ $AUTAN -eq 2 ]; then
-      echo "#5.4" >> $OUTFILE
       echo "t ia2 -ae still_shutter 70" >> $OUTFILE
       echo "sleep 1" >> $OUTFILE
       echo "t app key shutter" >> $OUTFILE
       echo "t app key shutter_rel" >> $OUTFILE 
       echo "sleep 15" >> $OUTFILE
-      
-      echo "#3.5" >> $OUTFILE
       echo "t ia2 -ae still_shutter 150" >> $OUTFILE
       echo "sleep 1" >> $OUTFILE
       echo "t app key shutter" >> $OUTFILE
       echo "t app key shutter_rel" >> $OUTFILE 
       echo "sleep 13" >> $OUTFILE
     fi
-
     echo "t ia2 -ae still_shutter $HDR2" >> $OUTFILE
     echo "sleep 1" >> $OUTFILE
     echo "t app key shutter" >> $OUTFILE
@@ -1506,23 +1513,19 @@ writeAutoexec ()
     else
       echo "sleep 2" >> $OUTFILE
     fi
-
     if [ $AUTAN -eq 1 ]; then
-      echo "#1/1630" >> $OUTFILE
       echo "t ia2 -ae still_shutter 1750" >> $OUTFILE
       echo "sleep 1" >> $OUTFILE
       echo "t app key shutter" >> $OUTFILE
       echo "t app key shutter_rel" >> $OUTFILE 
       echo "sleep 2" >> $OUTFILE
     elif [ $AUTAN -eq 2 ]; then
-      echo "#1.0" >> $OUTFILE
       echo "t ia2 -ae still_shutter 500" >> $OUTFILE
       echo "sleep 1" >> $OUTFILE
       echo "t app key shutter" >> $OUTFILE
       echo "t app key shutter_rel" >> $OUTFILE 
       echo "sleep 12" >> $OUTFILE
     fi
-
     echo "t ia2 -ae still_shutter $HDR3" >> $OUTFILE
     echo "sleep 1" >> $OUTFILE
     echo "t app key shutter" >> $OUTFILE
@@ -1532,7 +1535,6 @@ writeAutoexec ()
     else
       echo "sleep 2" >> $OUTFILE
     fi
-    
     echo "" >> $OUTFILE
   fi
 
