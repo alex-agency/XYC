@@ -12,10 +12,9 @@
 #
 # 1. Install script at top level of SD card and ensure execute permissions:
 #        chmod 755 /tmp/fuse_d/xyc.sh
-# 2  Optional.  If you have custom settings (e.g. bitrate, video size, etc.)
-#    that you want to be included in the autoexec.ash file, store these commands
-#    in a  file named autoexec.xyc in the same directory as xyc.sh.  Also, using
-#    XYC, set the "Custom Photo Settings" ->  "Import additional settings..."
+# 2  Optional.  If you have custom settings that you want to be included in the 
+#    autoexec.ash file, store these commands in a  file named autoexec.xyc in 
+#    the same directory as xyc.sh.  Also, using XYC, set the "Import User settings"
 #    menu choice to "yes".  XYC will copy everything from the autoexec.xyc into
 #    autoexec.ash whenever it updates autoexec.ash.
 # 3. Optional.  If you want XYC to operate in a language other than English,
@@ -33,8 +32,9 @@
 #
 # Changelog:
 #
-# 0.3.4 (Nov 2015) - Added ability to set bitrates for all resolutions
-# by Alex          - Added new video frequencies: 24fps, 48fps
+# 0.3.4 (Dec 2015) - Added ability to save and reuse different presets
+# by Alex          - Added ability to set bitrates for all resolutions
+#                  - Added new video frequencies: 24fps, 48fps
 #                  - Resolved 2560x1440 resolution, it's upscaling from 2304x1296
 #                  - Added ability to adjust Auto Knee, Gamma level
 #                  - Increased script performance
@@ -74,11 +74,12 @@ if [ ! -d "$FUSED" ]; then
   fi
 fi
 AASH=${FUSED}/autoexec.ash
-PRAWNCONF=${FUSED}/goprawn.config
+GOPRAWNCONF=${FUSED}/goprawn.config
 CORCONF=${FUSED}/sharpening.config
 THIS_SCRIPT="$SCRIPT_DIR/`basename "$0"`"
 LANGUAGE_FILE="$SCRIPT_DIR/xyc_strings.sh"
 USER_SETTINGS_FILE="$SCRIPT_DIR/autoexec.xyc"
+PRESETS_FILE="$SCRIPT_DIR/xyc_presets.sh"
 
 #=============================================================================
 #
@@ -94,11 +95,12 @@ USER_SETTINGS_FILE="$SCRIPT_DIR/autoexec.xyc"
 XYC_MAIN_MENU="Main Menu"
 XYC_EDIT_PHOTO_SETTINGS="View/Edit Photo settings"
 XYC_EDIT_VIDEO_SETTINGS="View/Edit Video settings"
-XYC_RESET_SETTINGS="Reset/Delete Camera settings"
+XYC_RESET_SETTINGS="Reset/Delete all settings"
 XYC_SHOW_CARD_SPACE="Show SD card space usage"
 XYC_RESTART_CAMERA="Restart Camera"
 XYC_EXIT="Exit"
 XYC_SAVE_AND_BACK="<- Save & Back"
+XYC_BACK="<- Back"
 XYC_SELECT_OPTION="Select option"
 XYC_INVALID_CHOICE="Invalid choice"
 XYC_SD_CARD_SPACE="SD Card Space"
@@ -137,9 +139,9 @@ XYC_VIDEO_SETTINGS_MENU="Video Settings Menu"
 XYC_INCLUDE_USER_SETTINGS_PROMPT="Import settings from autoexec.xyc (y/n)"
 XYC_HDR_MENU="HDR Settings Menu"
 XYC_CANNOT_READ="WARNING: Cannot read/access"
-XYC_PRAWN_NUTSEY="GoPrawn"
+XYC_GOPRAWN="GoPrawn"
 XYC_USER_IMPORT="Import User settings"
-XYC_PRAWN_PROMPT="GoPrawn Nutsey script (y/n)"
+XYC_GOPRAWN_PROMPT="Enable GoPrawn Nutsey script (y/n)"
 XYC_EXPOSURE_MENU="Exposure Setting"
 XYC_ISO_MENU="ISO Setting"
 XYC_SEC="sec"
@@ -185,11 +187,11 @@ XYC_MAX="Max"
 XYC_DISABLE="Disable"
 XYC_UPDATING_NOW="Updating now"
 XYC_SCRIPT_UPDATE="Update XYC"
-XYC_UPDATE_NOW_PROMPT="Download latest and rewrite XYC script (y/n)"
-XYC_NO_INTERNET="You don't have internet connection."
-XYC_UPDATE_ERROR="For download update you should have it."
+XYC_UPDATE_NOW_PROMPT="Download latest and rewrite existing XYC (y/n)"
+XYC_NO_INTERNET="The script doesn't have internet connection."
+XYC_UPDATE_ERROR="It's required for download XYC update."
 XYC_UPDATE_COMPLETE="Update complete."
-XYC_UPDATE_MANUAL="For download script manually browse to:"
+XYC_UPDATE_MANUAL="For download script manually browse to"
 XYC_CREATE_FILE="First create"
 XYC_BITRATE="Bitrate all"
 XYC_AAA="AAA"
@@ -201,6 +203,19 @@ XYC_CUSTOM="Custom"
 XYC_AUTOKNEE_MENU="Auto Knee Menu"
 XYC_VIBSAT="Saturation"
 XYC_VIBSAT_PROMPT="Vibrance and Saturation adjustments (y/n)"
+XYC_PRESETS="Manage XYC Presets"
+XYC_PRESETS_MENU="XYC Presets Menu"
+XYC_NO_PRESETS="You don't have any presets, create it first."
+XYC_LOAD_PRESET="Load preset"
+XYC_CREATE_PRESET="Create new preset"
+XYC_REMOVE_PRESET="Remove preset"
+XYC_LOAD_PRESET_MENU="Load Preset Menu"
+XYC_REMOVE_PRESET_MENU="Remove Preset Menu"
+XYC_NEW_PRESET_PROMPT="Enter name of current configuration"
+XYC_NAME_EXIST="Specified name already exist"
+XYC_PRESET_CREATED="XYC settings were saved to"
+XYC_PRESET_LOADED="Preset loaded"
+XYC_PRESET_REMOVED="Preset removed"
 
 #If language file exists, source it to override English language UI strings
 if [[ -s "$LANGUAGE_FILE" && -r "$LANGUAGE_FILE" ]]; then
@@ -209,21 +224,18 @@ fi
 
 #=============================================================================
 
-#Other settings
-unset EXITACTION
-
 welcome ()
 {
   clear
   echo ""
   echo " *  Xiaomi Yi Configurator  * "
-  echo " *  11/28/2015  ${VERS}  * "
+  echo " *  12/01/2015  ${VERS}  * "
   echo ""
 }
 
 showMainMenu ()
 {
-  local REPLY=0
+  local REPLY
   while [ "$EXITACTION" == "" ]
   do
     echo "    ====== ${XYC_MAIN_MENU} ====="
@@ -231,12 +243,13 @@ showMainMenu ()
     echo " [2] ${XYC_EDIT_VIDEO_SETTINGS}"
     echo " [3] ${XYC_CREATE_HDR}"
     echo " [4] ${XYC_USER_IMPORT}"
-    echo " [5] ${XYC_RESET_SETTINGS}"
-    echo " [6] ${XYC_SHOW_CARD_SPACE}"
-    echo " [7] ${XYC_RESTART_CAMERA}"
-    echo " [8] ${XYC_SCRIPT_UPDATE}"
-    echo " [9] ${XYC_EXIT}"
-
+    echo " [5] ${XYC_PRESETS}"
+    echo " [6] ${XYC_RESET_SETTINGS}"
+    echo " [7] ${XYC_SHOW_CARD_SPACE}"
+    echo " [8] ${XYC_RESTART_CAMERA}"
+    echo " [9] ${XYC_SCRIPT_UPDATE}"
+    echo " [10] ${XYC_EXIT}"
+    
     read -p "${XYC_SELECT_OPTION}: " REPLY
     clear
     case $REPLY in
@@ -244,67 +257,67 @@ showMainMenu ()
       1) showPhotoSettingsMenu; writeAutoexec;;
       2) showVideoSettingsMenu; writeAutoexec;;
       3) showHDRMenu; writeAutoexec;;
-      4) getIncludeUserSettings; writeAutoexec;;
-      5) removeAutoexec; resetCameraSettings;;
-      6) showSpaceUsage;;
-      7) EXITACTION="reboot";;
-      8) EXITACTION="update";;
-      9) EXITACTION="nothing";;
-      *) echo "$XYC_INVALID_CHOICE"; REPLY=0;;
+      4) getIncludeUserSettings;;
+      5) showPresetsMenu;;
+      6) removeAutoexec; resetCameraSettings;;
+      7) showSpaceUsage;;
+      8) EXITACTION="reboot";;
+      9) EXITACTION="update";;
+      10) EXITACTION="nothing";;
+      *) echo "${XYC_INVALID_CHOICE}";;
     esac
-
   done
 }
 
 showPhotoSettingsMenu ()
 {
-  local REPLY=0
-  while [ $REPLY -gt -1 ]
+  local REPLY
+  while true
   do
     echo "    == ${XYC_PHOTO_SETTINGS_MENU} =="
-    if [ $EXP -eq 0 ]; then 
+    if [ -z "$EXP" ]; then 
       echo " [1] ${XYC_EXPOSURE}     : ${XYC_AUTO}" 
     else 
       expView $EXP
       echo " [1] ${XYC_EXPOSURE}     : $EXPVIEW"
     fi
-    if [ $ISO -eq 0 ]; then 
+    if [ -z "$ISO" ]; then 
       echo " [2] ${XYC_ISO}          : ${XYC_AUTO}"
     else 
       echo " [2] ${XYC_ISO}          : $ISO"
     fi
-    if [ $AWB == ${XYC_Y} ]; then 
-      echo " [3] ${XYC_AWB}          : ${XYC_ON}" 
+    if [ "$AWB" == ${XYC_N} ]; then 
+      echo " [3] ${XYC_AWB}          : ${XYC_NO}" 
     else 
-      echo " [3] ${XYC_AWB}          : ${XYC_OFF}"
+      echo " [3] ${XYC_AWB}          : ${XYC_YES}"
     fi
-    if [ -z $AUTOKNEE ]; then 
+    if [ -z "$AUTOKNEE" ]; then 
       echo " [4] ${XYC_AUTOKNEE}    : ${XYC_DEFAULT}"
     else 
       echo " [4] ${XYC_AUTOKNEE}    : $AUTOKNEE" 
     fi
-    if [ $VIBSAT == ${XYC_Y} ]; then 
+    if [ "$VIBSAT" == ${XYC_Y} ]; then 
       echo " [5] ${XYC_VIBSAT}   : ${XYC_YES}" 
     else 
       echo " [5] ${XYC_VIBSAT}   : ${XYC_DEFAULT}"
     fi
-    if [ -z $SHR ]; then 
+    if [ -z "$SHR" ]; then 
       echo " [6] ${XYC_SHARPNESS}    : ${XYC_DEFAULT}"
     else 
       echo " [6] ${XYC_SHARPNESS}    : $SHR $FIR $COR"
     fi
-    if [ $PRAWN == ${XYC_Y} ]; then 
-      echo " [7] ${XYC_PRAWN_NUTSEY}      : ${XYC_YES}" 
+    if [ "$GOPRAWN" == ${XYC_Y} ]; then 
+      echo " [7] ${XYC_GOPRAWN}      : ${XYC_YES}" 
     else 
-      echo " [7] ${XYC_PRAWN_NUTSEY}      : ${XYC_NO}"
+      echo " [7] ${XYC_GOPRAWN}      : ${XYC_NO}"
     fi
-    if [ $RAW == ${XYC_Y} ]; then 
+    if [ "$RAW" == ${XYC_Y} ]; then 
       echo " [8] ${XYC_CREATE_RAW}   : ${XYC_YES}" 
     else 
       echo " [8] ${XYC_CREATE_RAW}   : ${XYC_NO}"
     fi
     echo " [9] ${XYC_SAVE_AND_BACK}"
-
+    
     read -p "${XYC_SELECT_OPTION}: " REPLY
     case $REPLY in
       1) getExposureInput; clear;;
@@ -315,19 +328,19 @@ showPhotoSettingsMenu ()
       6) getSharpnessInput; clear;;
       7) getGoPrawnInput; clear;;
       8) getRawInput; clear;;
-      9) clear; return 0;;
-      *) clear; echo "$XYC_INVALID_CHOICE"; REPLY=0;;
+      9) clear; return;;
+      *) clear; echo "${XYC_INVALID_CHOICE}";;
     esac
   done
 }
 
 showVideoSettingsMenu ()
 {
-  local REPLY=0
-  while [ $REPLY -gt -1 ]
+  local REPLY
+  while true
   do
     echo "    == ${XYC_VIDEO_SETTINGS_MENU} =="
-    if [ -z $NR ]; then
+    if [ -z "$NR" ]; then
       echo " [1] ${XYC_NR}           : ${XYC_DEFAULT}"
     elif [ $NR -eq -1 ]; then 
       echo " [1] ${XYC_NR}           : ${XYC_DISABLE}"
@@ -336,47 +349,47 @@ showVideoSettingsMenu ()
     else
       echo " [1] ${XYC_NR}           : $NR" 
     fi
-    if [ $AAA == ${XYC_Y} ]; then 
+    if [ "$AAA" == ${XYC_Y} ]; then 
       echo " [2] ${XYC_AAA}          : ${XYC_YES}"
     else 
       echo " [2] ${XYC_AAA}          : ${XYC_DEFAULT}" 
     fi
-    if [ -z $GAMMA ]; then 
+    if [ -z "$GAMMA" ]; then 
       echo " [3] ${XYC_GAMMA}        : ${XYC_DEFAULT}"
     else 
       echo " [3] ${XYC_GAMMA}        : $GAMMA" 
     fi
-    if [ -z $AUTOKNEE ]; then 
+    if [ -z "$AUTOKNEE" ]; then 
       echo " [4] ${XYC_AUTOKNEE}    : ${XYC_DEFAULT}"
     else 
       echo " [4] ${XYC_AUTOKNEE}    : $AUTOKNEE" 
     fi
-    if [ $VIBSAT == ${XYC_Y} ]; then 
+    if [ "$VIBSAT" == ${XYC_Y} ]; then 
       echo " [5] ${XYC_VIBSAT}   : ${XYC_YES}" 
     else 
       echo " [5] ${XYC_VIBSAT}   : ${XYC_DEFAULT}"
     fi
-    if [ -z $SHR ]; then 
+    if [ -z "$SHR" ]; then 
       echo " [6] ${XYC_SHARPNESS}    : ${XYC_DEFAULT}"
     else 
       echo " [6] ${XYC_SHARPNESS}    : $SHR $FIR $COR" 
     fi
-    if [ $PRAWN == ${XYC_Y} ]; then 
-      echo " [7] ${XYC_PRAWN_NUTSEY}      : ${XYC_YES}" 
+    if [ "$GOPRAWN" == ${XYC_Y} ]; then 
+      echo " [7] ${XYC_GOPRAWN}      : ${XYC_YES}" 
     else 
-      echo " [7] ${XYC_PRAWN_NUTSEY}      : ${XYC_NO}"
+      echo " [7] ${XYC_GOPRAWN}      : ${XYC_NO}"
     fi
-    if [ $RES -eq 0 ]; then 
+    if [ -z "$RES" ]; then 
       echo " [8] ${XYC_RESOLUTION}   : ${XYC_DEFAULT}" 
     else
       echo " [8] ${XYC_RESOLUTION}   : $RESVIEW"
     fi
-    if [[ -z $BIT || $BIT -eq 0 ]]; then 
+    if [ -z "$BIT" ]; then 
       echo " [9] ${XYC_BITRATE}  : ${XYC_DEFAULT}" 
     else
       echo " [9] ${XYC_BITRATE}  : $BITVIEW"
     fi
-    if [ $BIG_FILE == ${XYC_Y} ]; then 
+    if [ "$BIG_FILE" == ${XYC_Y} ]; then 
       echo " [10] ${XYC_BIG_FILE}   : ${XYC_YES}" 
     else
       echo " [10] ${XYC_BIG_FILE}   : ${XYC_NO}"
@@ -395,19 +408,19 @@ showVideoSettingsMenu ()
       8) getVideoResolutionInput; clear;;
       9) getVideoBitrateInput; clear;;
       10) getBigFileInput; clear;;
-      11) clear; return 0;;
-      *) clear; echo "$XYC_INVALID_CHOICE"; REPLY=0;;
+      11) clear; return;;
+      *) clear; echo "${XYC_INVALID_CHOICE}";;
     esac
   done
 }
 
 showHDRMenu ()
 {
-  local REPLY=0
-  while [[ $REPLY -gt -1 && $REPLY -lt 6 ]]
+  local REPLY
+  while true
   do
-    if [[ ! -z $AUTAN ]]; then
-      if [ $ISO -eq 0 ]; then 
+    if [ -n "$AUTAN" ]; then
+      if [ -z "$ISO" ]; then 
         echo " * ${XYC_ISO}     : ${XYC_AUTO}"
       else 
         echo " * ${XYC_ISO}     : $ISO"
@@ -443,16 +456,41 @@ showHDRMenu ()
     echo " [2] ${XYC_HDR_AUTO_DAY}"
     echo " [3] ${XYC_HDR_ADVANCED}"
     echo " [4] ${XYC_HDR_RESET}"
-    echo " [5] $XYC_SAVE_AND_BACK"
-
+    echo " [5] ${XYC_SAVE_AND_BACK}"
+    
     read -p "${XYC_SELECT_OPTION}: " REPLY
     case $REPLY in
       1) AUTAN=2; HDR1=1; HDR2=300; HDR3=900; getISOInput; clear;;
       2) AUTAN=1; HDR1=900; HDR2=1550; HDR3=2047; getISOInput; clear;;
       3) AUTAN=0; getHDRInput; getISOInput; clear;;
-      4) unset AUTAN; clear; return 0;;
-      5) clear; return 0;;
-      *) clear; echo "$XYC_INVALID_CHOICE"; REPLY=0;;
+      4) unset AUTAN HDR1 HDR2 HDR3; clear; return;;
+      5) clear; return;;
+      *) clear; echo "${XYC_INVALID_CHOICE}";;
+    esac
+  done
+}
+
+showPresetsMenu ()
+{
+  clear
+  local REPLY
+  while true
+  do
+    echo "    == ${XYC_PRESETS_MENU} =="
+    echo " [1] ${XYC_LOAD_PRESET}"
+    echo " [2] ${XYC_CREATE_PRESET}"  
+    echo " [3] ${XYC_REMOVE_PRESET}"
+    echo " [4] ${XYC_BACK}"
+    local REPLY
+    read -p "${XYC_SELECT_OPTION}: " REPLY
+    case $REPLY in 
+      1) if showPresetsList "load"; then 
+           writeAutoexec; return;
+         fi;;
+      2) getCreatePresetInput;; 
+      3) showPresetsList "remove";;
+      4) clear; return;;
+      *) clear; echo "${XYC_INVALID_CHOICE}";;
     esac
   done
 }
@@ -491,30 +529,19 @@ showSpaceUsage ()
 
 getCleanUpInput ()
 {
- read -p "${XYC_DELETE_VIDEO_PREVIEW_PROMPT} [${XYC_ENTER}=n]: " REPLY
+  read -p "${XYC_DELETE_VIDEO_PREVIEW_PROMPT} [${XYC_ENTER}=n]: " REPLY
   if [ "$REPLY" == ${XYC_Y} ]; then
-    removeAllPreviews
+    echo "${XYC_REMOVING} ${FUSED}/DCIM/100MEDIA/*.THM"
+    rm -f ${FUSED}/DCIM/100MEDIA/*.THM
+    echo "${XYC_REMOVING} ${FUSED}/DCIM/100MEDIA/*thm.mp4"
+    rm -f ${FUSED}/DCIM/100MEDIA/*thm.mp4
   fi
- read -p "${XYC_DELETE_RAW_PROMPT} [${XYC_ENTER}=n]: " REPLY
+  read -p "${XYC_DELETE_RAW_PROMPT} [${XYC_ENTER}=n]: " REPLY
   if [ "$REPLY" == ${XYC_Y} ]; then
-    removeAllRAWs
+    echo "${XYC_REMOVING} ${FUSED}/DCIM/100MEDIA/*.RAW"
+    rm -f ${FUSED}/DCIM/100MEDIA/*.RAW
   fi
 }
-
-removeAllPreviews ()
-{
-  echo "${XYC_REMOVING} ${FUSED}/DCIM/100MEDIA/*.THM"
-  rm -f ${FUSED}/DCIM/100MEDIA/*.THM
-  echo "${XYC_REMOVING} ${FUSED}/DCIM/100MEDIA/*thm.mp4"
-  rm -f ${FUSED}/DCIM/100MEDIA/*thm.mp4
-}
-
-removeAllRAWs ()
-{
-  echo "${XYC_REMOVING} ${FUSED}/DCIM/100MEDIA/*.RAW"
-  rm -f ${FUSED}/DCIM/100MEDIA/*.RAW
-}
-
 
 parseCommandLine ()
 {
@@ -531,7 +558,7 @@ parseCommandLine ()
       -k) AUTOKNEE=$2; shift;;
       -s) VIBSAT=$2; shift;;
       -r) RAW=$2; shift;;
-      -p) PRAWN=$2; shift;;
+      -p) GOPRAWN=$2; shift;;
       -b) BIG_FILE=$2; shift;;
       -u) INC_USER=$2; shift;;
        *) echo "${XYC_UNKNOWN_OPTION}: $key"; shift;;
@@ -543,47 +570,48 @@ parseCommandLine ()
 parseExistingAutoexec ()
 {
   #Parse existing values from autoexec.ash
-  ISO=`grep "t ia2 -ae exp" $AASH 2>/dev/null | cut -d " " -f 5`
-  EXP=`grep "t ia2 -ae exp" $AASH 2>/dev/null | cut -d " " -f 6`
+  ISO=$(grep "t ia2 -ae exp" $AASH 2>/dev/null | cut -d " " -f 5)
+  if [[ -n "$ISO" && $ISO -eq 0 ]]; then unset ISO; fi
+  
+  EXP=$(grep "t ia2 -ae exp" $AASH 2>/dev/null | cut -d " " -f 6)
+  if [[ -n "$EXP" && $EXP -eq 0 ]]; then unset EXP; fi
+  
+  NR=$(grep "t ia2 -adj tidx" $AASH 2>/dev/null | cut -d " " -f 6)
+  GAMMA=$(grep "t ia2 -adj gamma" $AASH 2>/dev/null | cut -d " " -f 5)
+  AUTOKNEE=$(grep "t ia2 -adj autoknee" $AASH 2>/dev/null | cut -d " " -f 5)
 
   grep -q "t ia2 -awb off" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then AWB=${XYC_N}; fi
 
-  NR=`grep "t ia2 -adj tidx" $AASH 2>/dev/null | cut -d " " -f 6`
-
   grep -q "t app test debug_dump 14" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RAW=${XYC_Y}; fi
 
+  grep -q "goprawn.config" $AASH 2>/dev/null
+  if [ $? -eq 0 ]; then GOPRAWN=${XYC_Y}; fi
+
+  grep -q "t ia2 -3a" $AASH 2>/dev/null
+  if [ $? -eq 0 ]; then AAA=${XYC_Y}; fi
+
+  grep -q "t ia2 -adj ev" $AASH 2>/dev/null
+  if [ $? -eq 0 ]; then VIBSAT=${XYC_Y}; fi
+  
   grep -q "#User settings" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then INC_USER=${XYC_Y}; fi
 
   grep -q "#HDRParams:" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then
-    AUTAN=`grep "#HDRParams:" $AASH | cut -d " " -f 2`
-    HDR1=`grep "#HDRParams:" $AASH | cut -d " " -f 3`
-    HDR2=`grep "#HDRParams:" $AASH | cut -d " " -f 4`
-    HDR3=`grep "#HDRParams:" $AASH | cut -d " " -f 5`
+    AUTAN=$(grep "#HDRParams:" $AASH | cut -d " " -f 2)
+    HDR1=$(grep "#HDRParams:" $AASH | cut -d " " -f 3)
+    HDR2=$(grep "#HDRParams:" $AASH | cut -d " " -f 4)
+    HDR3=$(grep "#HDRParams:" $AASH | cut -d " " -f 5)
   fi
 
   grep -q "#Sharpness:" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then
-    SHR=`grep "#Sharpness:" $AASH | cut -d " " -f 2`
-    FIR=`grep "#Sharpness:" $AASH | cut -d " " -f 3`
-    COR=`grep "#Sharpness:" $AASH | cut -d " " -f 4`
+    SHR=$(grep "#Sharpness:" $AASH | cut -d " " -f 2)
+    FIR=$(grep "#Sharpness:" $AASH | cut -d " " -f 3)
+    COR=$(grep "#Sharpness:" $AASH | cut -d " " -f 4)
   fi
-
-  grep -q "load d:\goprawn.config" $AASH 2>/dev/null
-  if [ $? -eq 0 ]; then PRAWN=${XYC_Y}; fi
-
-  grep -q "t ia2 -3a" $AASH 2>/dev/null
-  if [ $? -eq 0 ]; then AAA=${XYC_Y}; fi
-
-  GAMMA=`grep "t ia2 -adj gamma" $AASH 2>/dev/null | cut -d " " -f 5`
-  
-  AUTOKNEE=`grep "t ia2 -adj autoknee" $AASH 2>/dev/null | cut -d " " -f 5`
-  
-  grep -q "t ia2 -adj ev" $AASH 2>/dev/null
-  if [ $? -eq 0 ]; then VIBSAT=${XYC_Y}; fi
 
   grep -q "writeb 0xC06CC426 0x28" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=1; FPS=1; fi
@@ -648,8 +676,8 @@ resetCameraSettings ()
   unset EXP ISO AWB RAW
   unset NR AAA GAMMA RES FPS BIT BIG_FILE 
   unset SHR FIR COR
-  unset PRAWN AUTOKNEE VIBSAT
-  unset AUTAN
+  unset GOPRAWN AUTOKNEE VIBSAT
+  unset AUTAN HDR1 HDR2 HDR3
   unset INC_USER
   setMissingValues
   promptToRestart
@@ -657,17 +685,7 @@ resetCameraSettings ()
 
 setMissingValues ()
 {
-  #Set reasonable defaults for any missing values
-  if [ -z "$ISO" ]; then ISO=0; fi
-  if [ -z "$EXP" ]; then EXP=0; fi
-  if [[ "$AWB" != ${XYC_Y} && "$AWB" != ${XYC_N} ]]; then AWB=${XYC_Y}; fi
-  if [[ "$RAW" != ${XYC_Y} && "$RAW" != ${XYC_N} ]]; then RAW=${XYC_N}; fi
-  if [[ "$BIG_FILE" != ${XYC_Y} && "$BIG_FILE" != ${XYC_N} ]]; then BIG_FILE=${XYC_N}; fi
-  if [[ "${INC_USER}" != ${XYC_Y} && "${INC_USER}" != ${XYC_N} ]]; then INC_USER=${XYC_N}; fi
-  if [[ "$PRAWN" != ${XYC_Y} && "$PRAWN" != ${XYC_N} ]]; then PRAWN=${XYC_N}; fi
-  if [[ "$AAA" != ${XYC_Y} && "$AAA" != ${XYC_N} ]]; then AAA=${XYC_N}; fi 
-  if [[ "$VIBSAT" != ${XYC_Y} && "$VIBSAT" != ${XYC_N} ]]; then VIBSAT=${XYC_N}; fi    
-  if [ -z "$RES" ]; then RES=0; FPS=2; else setRESView; fi
+  setRESView
   setBITView
 }
 
@@ -691,7 +709,7 @@ getExposureInput ()
   local REPLY=$EXP
   read -p "${XYC_SELECT_OPTION}: 0-34: " REPLY
   case $REPLY in
-    0) EXP=0;;
+    0) unset EXP;;
     1) EXP=1;;
     2) EXP=8;;
     3) EXP=50;;
@@ -731,8 +749,7 @@ getExposureInput ()
 
 expView ()
 {
-  case $1 in 
-    0) EXPVIEW="Auto";;
+  case ${1} in 
     1) EXPVIEW="7.9 sec";;
     8) EXPVIEW="7.7 sec";;
     50) EXPVIEW="6.1 sec";;
@@ -767,13 +784,14 @@ expView ()
     1900) EXPVIEW="1/3675 sec";;
     2000) EXPVIEW="1/6316 sec";;
     2047) EXPVIEW="1/8147 sec";;
+    *) EXPVIEW="Auto";;
   esac
 }
 
 getISOInput ()
 {
   clear
-  if [ -z $AUTAN ]; then
+  if [ -z "$AUTAN" ]; then
     expView $EXP
     echo " * ${XYC_EXPOSURE}: $EXPVIEW "
   elif [ $AUTAN -eq 2 ]; then
@@ -809,7 +827,7 @@ getISOInput ()
   local REPLY=$ISO
   read -p "${XYC_SELECT_OPTION}: 0-9: " REPLY
   case $REPLY in 
-    0) ISO=0;;
+    0) unset ISO;;
     1) ISO=100;;
     2) ISO=200;;
     3) ISO=400;;
@@ -825,8 +843,8 @@ getISOInput ()
 getAWBInput ()
 {
   clear 
-  local REPLY=$AWB
-  read -p "${XYC_ENTER_AWB_PROMPT} [${XYC_ENTER}=$AWB]: " REPLY
+  local REPLY
+  read -p "${XYC_ENTER_AWB_PROMPT} [${XYC_ENTER}]: " REPLY
   if [[ "$REPLY" == ${XYC_Y} || "$REPLY" == ${XYC_N} ]]; then AWB=$REPLY; fi
 }
 
@@ -842,14 +860,14 @@ getNRInput ()
   echo " * (5) ${XYC_CUSTOM}                      * "  
   echo " *********************************** "
   local REPLY
-  read -p "${XYC_SELECT_OPTION}: " REPLY
+  read -p "${XYC_SELECT_OPTION}: 0-5: " REPLY
   case $REPLY in 
     0) unset NR;;
     1) NR=-1;; 
     2) NR=500;; 
     3) NR=2048;; 
     4) NR=16383;;
-    *) getCustomNRInput;;
+    5) getCustomNRInput;;
   esac
 }
 
@@ -858,7 +876,7 @@ getCustomNRInput ()
   clear 
   local REPLY=$NR
   read -p "${XYC_CUSTOM_NR_PROMPT} [${XYC_ENTER}=$NR]: " REPLY
-  if [ $REPLY ]; then
+  if [ -n "$REPLY" ]; then
     if [[ $REPLY -le 16383 && $REPLY -ge 0 ]]; then NR=$REPLY; fi
   fi
 }
@@ -866,8 +884,8 @@ getCustomNRInput ()
 getAAAInput ()
 {
   clear 
-  local REPLY=$AAA
-  read -p "${XYC_AAA_PROMPT} [${XYC_ENTER}=$AAA]: " REPLY
+  local REPLY
+  read -p "${XYC_AAA_PROMPT} [${XYC_ENTER}]: " REPLY
   if [[ "$REPLY" == ${XYC_Y} || "$REPLY" == ${XYC_N} ]]; then AAA=$REPLY; fi
 }
 
@@ -881,12 +899,12 @@ getGammaInput ()
   echo " * (3) ${XYC_CUSTOM}                      * "  
   echo " *********************************** "
   local REPLY
-  read -p "${XYC_SELECT_OPTION}: " REPLY
+  read -p "${XYC_SELECT_OPTION}: 0-3: " REPLY
   case $REPLY in 
     0) unset GAMMA;;
-    1) GAMMA=220;; 
-    2) GAMMA=255;; 
-    *) getCustomGammaInput;;
+    1) GAMMA=220;;
+    2) GAMMA=255;;
+    3) getCustomGammaInput;;
   esac
 }
 
@@ -895,7 +913,7 @@ getCustomGammaInput ()
   clear
   local REPLY=$GAMMA
   read -p "${XYC_GAMMA_PROMPT} [${XYC_ENTER}=$GAMMA]: " REPLY
-  if [ $REPLY ]; then
+  if [ -n "$REPLY" ]; then
     if [[ $REPLY -le 255 && $REPLY -ge 0 ]]; then GAMMA=$REPLY; fi
   fi
 }
@@ -909,11 +927,11 @@ getAutoKneeInput ()
   echo " * (2) ${XYC_CUSTOM}                      * "  
   echo " *********************************** "
   local REPLY
-  read -p "${XYC_SELECT_OPTION}: " REPLY
+  read -p "${XYC_SELECT_OPTION}: 0-2: " REPLY
   case $REPLY in 
     0) unset AUTOKNEE;;
     1) AUTOKNEE=255;; 
-    *) getCustomAutoKneeInput;;
+    2) getCustomAutoKneeInput;;
   esac
 }
 
@@ -922,7 +940,7 @@ getCustomAutoKneeInput ()
   clear
   local REPLY=$AUTOKNEE
   read -p "${XYC_AUTOKNEE_PROMPT} [${XYC_ENTER}=$AUTOKNEE]: " REPLY
-  if [ $REPLY ]; then
+  if [ -n "$REPLY" ]; then
     if [[ $REPLY -le 255 && $REPLY -ge 0 ]]; then AUTOKNEE=$REPLY; fi
   fi
 }
@@ -930,16 +948,16 @@ getCustomAutoKneeInput ()
 getVibSatInput ()
 {
   clear 
-  local REPLY=$VIBSAT
-  read -p "${XYC_VIBSAT_PROMPT} [${XYC_ENTER}=$VIBSAT]: " REPLY
+  local REPLY
+  read -p "${XYC_VIBSAT_PROMPT} [${XYC_ENTER}]: " REPLY
   if [[ "$REPLY" == ${XYC_Y} || "$REPLY" == ${XYC_N} ]]; then VIBSAT=$REPLY; fi
 }
 
 getRawInput ()
 {
-  clear 
-  local REPLY=$RAW
-  read -p "${XYC_CREATE_RAW_PROMPT} [${XYC_ENTER}=$RAW]: " REPLY
+  clear
+  local REPLY
+  read -p "${XYC_CREATE_RAW_PROMPT} [${XYC_ENTER}]: " REPLY
   if [[ "$REPLY" == ${XYC_Y} || "$REPLY" == ${XYC_N} ]]; then RAW=$REPLY; fi
 }
 
@@ -947,24 +965,21 @@ getSharpnessInput ()
 {
   clear
   echo " ********** ${XYC_SHARPNESS_MODE} ********* "
-  echo " * (0) ${XYC_DEFAULT}                     * "
-  echo " * (1) ${XYC_SHR_MODE_VIDEO}                       * "
-  echo " * (2) ${XYC_SHR_MODE_FAST}                  * "
-  echo " * (3) ${XYC_SHR_MODE_LOWISO}                * "
-  echo " * (4) ${XYC_SHR_MODE_HIGHISO}               * "
+  echo " * (0) ${XYC_SHR_MODE_VIDEO}                       * "
+  echo " * (1) ${XYC_SHR_MODE_FAST}                  * "
+  echo " * (2) ${XYC_SHR_MODE_LOWISO}                * "
+  echo " * (3) ${XYC_SHR_MODE_HIGHISO}               * "
+  echo " * (4) ${XYC_DEFAULT}                     * "
   echo " *********************************** "
   local REPLY=$SHR
-  read -p "${XYC_SELECT_OPTION}: " REPLY
+  read -p "${XYC_SELECT_OPTION}: 0-4: " REPLY
   case $REPLY in 
-    0) unset SHR return;;
-    1) SHR=0;; 
-    2) SHR=1;; 
-    3) SHR=2;; 
-    4) SHR=3;;
+    0) SHR=0; getSharpFirInput;; 
+    1) SHR=1; getSharpFirInput;; 
+    2) SHR=2; getSharpFirInput;; 
+    3) SHR=3; getSharpFirInput;;
+    4) unset SHR FIR COR; return;;
   esac
-  if [[ ! -z $SHR ]]; then 
-    getSharpFirInput
-  fi
 }
 
 getSharpFirInput ()
@@ -974,7 +989,7 @@ getSharpFirInput ()
   read -p "${XYC_SHARPNESS_FIR_PROMPT} [${XYC_ENTER}=$FIR]: " REPLY
   if [ -n "$REPLY" ]; then 
     FIR=$REPLY; 
-  elif [ -z "$FIR" ]; then
+  else
     FIR=100;
   fi
   getSharpCorInput
@@ -987,17 +1002,17 @@ getSharpCorInput ()
   read -p "${XYC_SHARPNESS_COR_PROMPT} [${XYC_ENTER}=$COR]: " REPLY
   if [ -n "$REPLY" ]; then 
     COR=$REPLY;
-  elif [ -z "$COR" ]; then
+  else
     COR=104; 
   fi
 }
 
 getGoPrawnInput ()
 {
-  clear 
-  local REPLY=$PRAWN
-  read -p "${XYC_PRAWN_PROMPT} [${XYC_ENTER}=$PRAWN]: " REPLY
-  if [[ "$REPLY" == ${XYC_Y} || "$REPLY" == ${XYC_N} ]]; then PRAWN=$REPLY; fi
+  clear
+  local REPLY
+  read -p "${XYC_GOPRAWN_PROMPT} [${XYC_ENTER}]: " REPLY
+  if [[ "$REPLY" == ${XYC_Y} || "$REPLY" == ${XYC_N} ]]; then GOPRAWN=$REPLY; fi
 }
 
 getVideoResolutionInput ()
@@ -1010,21 +1025,16 @@ getVideoResolutionInput ()
   echo " * (3) 1600x1200                   * "  
   echo " *********************************** "
   local REPLY=$RES
-  read -p "${XYC_SELECT_OPTION}: " REPLY
+  read -p "${XYC_SELECT_OPTION}: 0-6: " REPLY
   case $REPLY in 
-    0) RES=0; return;;
-    1) RES=1;;
-    2) RES=2;;
-    3) RES=3;;
-    4) RES=4;;
-    5) RES=5;;
-    6) RES=6;;
+    0) unset RES FPS; return;;
+    1) RES=1; getVideoFrequencyInput;;
+    2) RES=2; getVideoFrequencyInput;;
+    3) RES=3; getVideoFrequencyInput;;
+    4) RES=4; getVideoFrequencyInput;;
+    5) RES=5; FPS=2;;
+    6) RES=6; FPS=2;;
   esac
-  if [ $RES -ge 5 ]; then
-    FPS=2; 
-  else
-    getVideoFrequencyInput  
-  fi
   setRESView
 }
 
@@ -1040,14 +1050,10 @@ getVideoFrequencyInput ()
     echo " * (5) 120 FPS                     * "
   fi
   echo " *********************************** "
-  local REPLY
+  local REPLY=$FPS
   read -p "${XYC_SELECT_OPTION}: " REPLY
-  if [ -ne $REPLY ]; then
-    REPLY=$FPS
-  fi
   case $REPLY in 
     1) FPS=1;;
-    2) FPS=2;;
     3) FPS=3;;
     4) FPS=4;;
     5)  if [ $RES -eq 1 ]; then 
@@ -1055,6 +1061,7 @@ getVideoFrequencyInput ()
         else 
           FPS=2 
         fi;;
+    *) FPS=2;;
   esac
 }
 
@@ -1067,10 +1074,10 @@ getVideoBitrateInput ()
   echo " * (2) 25 Mb/s    (6) 45 Mb/s      * "
   echo " * (3) 30 Mb/s    (7) 50 Mb/s      * "
   echo " *********************************** "
-  local REPLY
-  read -p "${XYC_SELECT_OPTION}: " REPLY
+  local REPLY=$BIT
+  read -p "${XYC_SELECT_OPTION}: 0-7: " REPLY
   case $REPLY in 
-    0) BIT=0; return;;
+    0) unset BIT; return;;
     1) BIT="0x41A0";;
     2) BIT="0x41C8";;
     3) BIT="0x41F0";;
@@ -1084,6 +1091,7 @@ getVideoBitrateInput ()
 
 setRESView ()
 {
+  if [ -z "$RES" ]; then return; fi
   if [ $RES -eq 1 ]; then 
     RESVIEW="720p" 
     if [ $FPS -eq 1 ]; then 
@@ -1145,6 +1153,7 @@ setRESView ()
 
 setBITView ()
 {
+  if [ -z "$BIT" ]; then return; fi
   if [ "$BIT" == "0x41A0" ]; then
     BITVIEW="20Mb"
   elif [ "$BIT" == "0x41C8" ]; then
@@ -1165,24 +1174,26 @@ setBITView ()
 getBigFileInput ()
 {
   clear 
-  local REPLY=$BIG_FILE
-  read -p "${XYC_BIG_FILE_PROMPT} [${XYC_ENTER}=$BIG_FILE]: " REPLY
+  local REPLY
+  read -p "${XYC_BIG_FILE_PROMPT} [${XYC_ENTER}]: " REPLY
   if [[ "$REPLY" == ${XYC_Y} || "$REPLY" == ${XYC_N} ]]; then BIG_FILE=$REPLY; fi
 }
 
 getIncludeUserSettings ()
 {
   clear
-  if [ $INC_USER == ${XYC_Y} ]; then 
+  if [ "$INC_USER" == ${XYC_Y} ]; then 
     echo " * ${XYC_USER_IMPORT}: ${XYC_YES}"
     echo ""
   fi
-  if [[ "$USER_SETTINGS_FILE" && -r "$USER_SETTINGS_FILE" ]]; then
-    local REPLY=$INC_USER
-    read -p "${XYC_INCLUDE_USER_SETTINGS_PROMPT} [${XYC_ENTER}=$REPLY]: " REPLY
+  if [[ -f "$USER_SETTINGS_FILE" && -r "$USER_SETTINGS_FILE" ]]; then
+    local REPLY
+    read -p "${XYC_INCLUDE_USER_SETTINGS_PROMPT} [${XYC_ENTER}]: " REPLY
     if [[ "$REPLY" == ${XYC_Y} || "$REPLY" == ${XYC_N} ]]; then 
-      INC_USER=$REPLY; 
-    fi    
+      INC_USER=$REPLY;
+      clear; writeAutoexec;
+      return;
+    fi
   else
     echo "${XYC_CANNOT_READ} $USER_SETTINGS_FILE"
     echo "${XYC_CREATE_FILE} $USER_SETTINGS_FILE"
@@ -1202,7 +1213,7 @@ getHDRInput ()
     echo " * (1)=1/50   (3)=1/80   (5)=1/140 * "    
     echo " * (2)=1/60   (4)=1/125  (6)=1/250 * "
     echo " *********************************** "
-    read -p "${XYC_SELECT_OPTION}: " REPLY
+    read -p "${XYC_SELECT_OPTION}: 1-6: " REPLY
     case $REPLY in
       1) HDR1=1100; HEHE1=1; clear;;
       2) HDR1=1145; HEHE1=2; clear;;
@@ -1225,7 +1236,7 @@ getHDRInput ()
     echo " * (1)=1/420  (3)=1/624 (5)=1/1002 * "    
     echo " * (2)=1/500  (4)=1/752 (6)=1/1244 * "
     echo " *********************************** "
-    read -p "${XYC_SELECT_OPTION}: " REPLY
+    read -p "${XYC_SELECT_OPTION}: 1-6: " REPLY
     case $REPLY in
       1) HDR2=1500; HEHE2=1; clear;;
       2) HDR2=1531; HEHE2=2; clear;;
@@ -1249,7 +1260,7 @@ getHDRInput ()
     echo " * (1)=1/2138 (3)=1/2803 (5)=1/6316 * "    
     echo " * (2)=1/2448 (4)=1/3675 (6)=1/8147 * "
     echo " ************************************ "
-    read -p "${XYC_SELECT_OPTION}: " REPLY
+    read -p "${XYC_SELECT_OPTION}: 1-6: " REPLY
     case $REPLY in
       1) HDR3=1800; HEHE3=1; clear;;
       2) HDR3=1825; HEHE3=2; clear;;
@@ -1262,16 +1273,157 @@ getHDRInput ()
   done
 }
 
+getCreatePresetInput ()
+{
+  clear 
+  local NAME
+  while [ -z "$NAME" ]
+  do
+    local REPLY
+    read -p "${XYC_NEW_PRESET_PROMPT} [${XYC_ENTER}]: " REPLY
+    if [ -z "$REPLY" ]; then 
+      clear; return;
+    else
+      REPLY=${REPLY//[[:space:]]/}
+    fi
+    if [[ ! -f "$PRESETS_FILE" ]]; then
+      echo "Creating $PRESETS_FILE"
+      echo "# Created by XYC $VERS" > $PRESETS_FILE
+      echo "# https://github.com/alex-agency/XYC" >> $PRESETS_FILE
+      echo "# XYC Presets config" >> $PRESETS_FILE
+      NAME=$REPLY
+    else
+      if grep -Rq "^$REPLY." $PRESETS_FILE; then
+        clear; 
+        echo "${XYC_NAME_EXIST}: $REPLY"
+      else
+        NAME=$REPLY
+      fi
+    fi
+  done
+  clear
+  echo "Writing $PRESETS_FILE"
+  echo "" >> $PRESETS_FILE
+  echo "#Start $NAME" >> $PRESETS_FILE
+  writePreset $NAME "ISO" "ISO"
+  writePreset $NAME "EXP" "Exposure"
+  writePreset $NAME "AWB" "AWB"
+  writePreset $NAME "NR" "NR"
+  writePreset $NAME "RAW" "RAW"
+  writePreset $NAME "AUTAN" "HDR Mode"
+  writePreset $NAME "HDR1" "HDR1"
+  writePreset $NAME "HDR2" "HDR2"
+  writePreset $NAME "HDR3" "HDR3"
+  writePreset $NAME "SHR" "Sharpness Mode"
+  writePreset $NAME "FIR" "Sharpness Digital Filter"
+  writePreset $NAME "COR" "Sharpness Coring"
+  writePreset $NAME "GOPRAWN" "GoPrawn"
+  writePreset $NAME "AAA" "AAA"
+  writePreset $NAME "GAMMA" "Gamma"
+  writePreset $NAME "AUTOKNEE" "Auto Knee"
+  writePreset $NAME "VIBSAT" "Vibrance/Saturation"
+  writePreset $NAME "RES" "Resolution"
+  writePreset $NAME "FPS" "FPS"
+  writePreset $NAME "BIT" "Bitrate"
+  writePreset $NAME "BIG_FILE" "4Gb files"
+  writePreset $NAME "INC_USER" "Import User settings"
+  echo "#End $NAME" >> $PRESETS_FILE
+  
+  echo "" 
+  echo "${XYC_PRESET_CREATED}: $NAME"
+  echo ""  
+  read -p "[${XYC_ENTER}]"
+  clear
+}
+
+writePreset ()
+{
+  local VALUE
+  eval VALUE="\$${2}"
+  if [ -n "$VALUE" ]; then
+    echo "${3}: $VALUE"
+    echo "${1}.${2}=$VALUE #${3}" >> $PRESETS_FILE
+  fi
+}
+
+showPresetsList ()
+{
+  clear
+  local PRESET=$(grep -F '=' $PRESETS_FILE | cut -d '.' -f1 | sort -u )
+  if [ -n "$PRESET" ]; then
+    if [ "${1}" == "load" ]; then
+      echo "    == ${XYC_LOAD_PRESET_MENU} =="
+    else
+      echo "    == ${XYC_REMOVE_PRESET_MENU} =="
+    fi
+    local i=1
+    for item in $PRESET; do
+      echo " [$((i++))] $item "
+    done
+    local REPLY
+    read -p "${XYC_SELECT_OPTION}: " REPLY
+    if [[ -n "$REPLY" && $REPLY -ne 0 ]]; then
+      local NAME=$(echo $PRESET | cut -d ' ' -f$REPLY)
+      if [ "${1}" == "load" ]; then
+        loadPreset $NAME
+        return;
+      else
+        removePreset $NAME
+      fi
+    fi
+  else
+    echo ""
+    echo "${XYC_NO_PRESETS}"
+    echo ""
+    read -p "[${XYC_ENTER}]"
+  fi
+  clear
+  return 1;
+}
+
+loadPreset ()
+{
+  clear
+  echo "Reading $PRESETS_FILE"
+  while read line
+  do
+    if echo $line | grep "${1}." >/dev/null; then
+      local PARAM=$(echo "$line" | cut -d '.' -f 2)
+      local INFO=$(echo "$PARAM" | cut -d '#' -f 2)
+      local VALUE=$(echo "$PARAM" | cut -d '=' -f 2 | cut -d ' ' -f 1)
+      
+      eval $(echo "$PARAM" | cut -d ' ' -f 1)
+      echo "$INFO: $VALUE"
+    fi
+  done < $PRESETS_FILE
+  echo "" 
+  echo "${XYC_PRESET_LOADED}: $NAME"
+  echo ""  
+  read -p "[${XYC_ENTER}]"
+  clear
+}
+
+removePreset ()
+{
+  clear
+  echo "Writing $PRESETS_FILE"
+  echo "$(grep -v "${1}" $PRESETS_FILE)" > $PRESETS_FILE
+  echo "" 
+  echo "${XYC_PRESET_REMOVED}: $NAME"
+  echo ""  
+  read -p "[${XYC_ENTER}]"
+  clear
+}
+
 removeAutoexec ()
 {
-  #Note: This works in "t": rm 'd:\autoexec.ash'
   echo "${XYC_DELETING} $AASH" 
   rm -f $AASH
-  if [[ "$PRAWNCONF" && -w "$PRAWNCONF" ]]; then
-    echo "${XYC_DELETING} $PRAWNCONF" 
-    rm -f $PRAWNCONF
+  if [[ -f "$GOPRAWNCONF" && -w "$GOPRAWNCONF" ]]; then
+    echo "${XYC_DELETING} $GOPRAWNCONF" 
+    rm -f $GOPRAWNCONF
   fi
-  if [[ "$CORCONF" && -w "$CORCONF" ]]; then
+  if [[ -f "$CORCONF" && -w "$CORCONF" ]]; then
     echo "${XYC_DELETING} $CORCONF" 
     rm -f $CORCONF
   fi
@@ -1284,21 +1436,20 @@ writeAutoexec ()
   echo "${XYC_WRITING} $OUTFILE"
 
   #Write any necessary script commands to autoexec.ash
-  echo "# Generated by XYC ${VERS}, `date`" > $OUTFILE
+  echo "# Generated by XYC $VERS, `date`" > $OUTFILE
   echo "# https://github.com/alex-agency/XYC" >> $OUTFILE
   echo "" >> $OUTFILE
 
   #Add user settings first, so that changes made by this script overwrite
   #any conflicting settings that might be specified in user file
   if [ "$INC_USER" == ${XYC_Y} ]; then
-    if [[ "$USER_SETTINGS_FILE" && -r "$USER_SETTINGS_FILE" ]]; then
-    echo "#User settings imported from ${USER_SETTINGS_FILE}:" >> $OUTFILE
+    if [[ -f "$USER_SETTINGS_FILE" && -r "$USER_SETTINGS_FILE" ]]; then
+    echo "#User settings imported from $USER_SETTINGS_FILE" >> $OUTFILE
       cat $USER_SETTINGS_FILE >> $OUTFILE
       echo "#End user settings" >> $OUTFILE
       echo "" >> $OUTFILE
     else
       echo "${XYC_CANNOT_READ} $USER_SETTINGS_FILE"
-      echo "#${XYC_CANNOT_READ} $USER_SETTINGS_FILE" >> $OUTFILE
     fi
   fi
 
@@ -1312,7 +1463,7 @@ writeAutoexec ()
     echo "" >> $OUTFILE
   fi
 
-  if [[ ! -z $AUTOKNEE ]]; then
+  if [ -n "$AUTOKNEE" ]; then
     echo "#shadow/highlight clipping adjustments" >> $OUTFILE
     echo "#this makes blacks not crushed" >> $OUTFILE
     echo "#set long exposure level [0~255]" >> $OUTFILE
@@ -1323,25 +1474,31 @@ writeAutoexec ()
     echo "" >> $OUTFILE
   fi
   
-  if [[ ! -z $GAMMA ]]; then
+  if [ -n "$GAMMA" ]; then
     echo "#set gamma level [0~255]" >> $OUTFILE
     echo "t ia2 -adj gamma $GAMMA" >> $OUTFILE
     echo "" >> $OUTFILE
   fi
   
-  if [[ $ISO -ne 0 || $EXP -ne 0 ]]; then
+  if [[ -n "$ISO" || -n "$EXP" ]]; then
     echo "#set ISO and Exposure" >> $OUTFILE
-    echo "t ia2 -ae exp $ISO $EXP" >> $OUTFILE
+    if [ -z "$ISO" ]; then #ISO (Auto)
+      echo "t ia2 -ae exp 0 $EXP" >> $OUTFILE
+    elif [ -z "$EXP" ]; then  #Exposure (Auto)
+      echo "t ia2 -ae exp $ISO 0" >> $OUTFILE
+    else
+      echo "t ia2 -ae exp $ISO $EXP" >> $OUTFILE
+    fi
     echo "" >> $OUTFILE
   fi
 
   if [ "$AWB" == ${XYC_N} ]; then
-    echo "#set Auto White Balance" >> $OUTFILE
+    echo "#disable Auto White Balance" >> $OUTFILE
     echo "t ia2 -awb off" >> $OUTFILE
     echo "" >> $OUTFILE
   fi
 
-  if [[ ! -z $NR ]]; then
+  if [ -n "$NR" ]; then
     echo "#set Noise Reduction" >> $OUTFILE
     echo "# tidx: [ev_idx][nf_idx][shutter_idx], -1 disable" >> $OUTFILE
     echo "# [nf_idx]: 0-16383, 0 no noise (sharper video)" >> $OUTFILE
@@ -1349,8 +1506,8 @@ writeAutoexec ()
     echo "" >> $OUTFILE
   fi
 
-  if [[ ! -z $SHR ]]; then
-    echo "#Sharpness: $SHR $FIR $COR " >> $OUTFILE  
+  if [ -n "$SHR" ]; then
+    echo "#Sharpness: $SHR $FIR $COR" >> $OUTFILE  
     echo "#set sharpness" >> $OUTFILE
     echo "t is2 -shp mode $SHR" >> $OUTFILE
     echo "t is2 -shp fir $FIR 0 0 0 0 0 0" >> $OUTFILE
@@ -1360,13 +1517,15 @@ writeAutoexec ()
     echo "" >> $OUTFILE
 
     echo "Writing $CORCONF"
-    echo "# Generated by XYC ${VERS}, `date`" > $CORCONF
+    #Write any necessary script commands to sharpening.config
+    echo "# Generated by XYC $VERS, `date`" > $CORCONF
     echo "# https://github.com/alex-agency/XYC" >> $CORCONF
     echo "# Sharpening Coring script" >> $CORCONF
     echo "$COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR $COR" >> $CORCONF
+    echo "" >> $CORCONF
   fi
 
-  if [ $RES -eq 1 ]; then
+  if [[ -n "$RES" && $RES -eq 1 ]]; then
     echo "#set video $RESVIEW" >> $OUTFILE
     if [ $FPS -eq 1 ]; then                         #1280x720 24fps
       echo "writeb 0xC06CC426 0x28" >> $OUTFILE
@@ -1385,7 +1544,7 @@ writeAutoexec ()
       echo "writel 0xC05C309C 0x02D00500" >> $OUTFILE
     fi
     echo "" >> $OUTFILE
-  elif [ $RES -eq 2 ]; then
+  elif [[ -n "$RES" && $RES -eq 2 ]]; then
     echo "#set video $RESVIEW" >> $OUTFILE
     if [ $FPS -eq 1 ]; then                         #1280x960 24fps
       echo "writeb 0xC06CC426 0x26" >> $OUTFILE
@@ -1401,7 +1560,7 @@ writeAutoexec ()
       echo "writel 0xC05C2E44 0x03C00500" >> $OUTFILE     
     fi
     echo "" >> $OUTFILE
-  elif [ $RES -eq 3 ]; then
+  elif [[ -n "$RES" && $RES -eq 3 ]]; then
     echo "#set video $RESVIEW" >> $OUTFILE
     if [ $FPS -eq 1 ]; then                         #1600x1200 24fps
       echo "writeb 0xC06CC426 0x24" >> $OUTFILE
@@ -1417,7 +1576,7 @@ writeAutoexec ()
       echo "writel 0xC05C2D7C 0x04B00640" >> $OUTFILE    
     fi
     echo "" >> $OUTFILE
-  elif [ $RES -eq 4 ]; then
+  elif [[ -n "$RES" && $RES -eq 4 ]]; then
     echo "#set video $RESVIEW" >> $OUTFILE
     if [ $FPS -eq 1 ]; then                         #1920x1080 24fps
       echo "writeb 0xC06CC426 0x21" >> $OUTFILE
@@ -1433,14 +1592,14 @@ writeAutoexec ()
       echo "writel 0xC05C2CC8 0x04380780" >> $OUTFILE
     fi
     echo "" >> $OUTFILE
-  elif [ $RES -eq 5 ]; then
+  elif [[ -n "$RES" && $RES -eq 5 ]]; then
     echo "#set video $RESVIEW" >> $OUTFILE
     if [ $FPS -eq 2 ]; then                       #2304x1296 30fps                         
       echo "writeb 0xC06CC426 0x02" >> $OUTFILE
       echo "writel 0xC05C2CB4 0x05100900" >> $OUTFILE
     fi
     echo "" >> $OUTFILE
-  elif [ $RES -eq 6 ]; then
+  elif [[ -n "$RES" && $RES -eq 6 ]]; then
     echo "#set video $RESVIEW" >> $OUTFILE
     if [ $FPS -eq 2 ]; then                       #2560x1440 30fps  
       echo "writeb 0xC06CC426 0x02" >> $OUTFILE
@@ -1449,7 +1608,7 @@ writeAutoexec ()
     echo "" >> $OUTFILE
   fi
   
-  if [[ ! -z $BIT && $BIT -ne 0 ]]; then
+  if [ -n "$BIT" ]; then
     echo "#set $BITVIEW bitrate for all resolutions" >> $OUTFILE
     echo "#1280x720 24fps" >> $OUTFILE
     echo "writew 0xC05C25D2 $BIT" >> $OUTFILE
@@ -1513,46 +1672,47 @@ writeAutoexec ()
     echo "" >> $OUTFILE
   fi
 
-  if [ "$PRAWN" == ${XYC_Y} ]; then
+  if [ "$GOPRAWN" == ${XYC_Y} ]; then
     echo "#load GoPrawn config" >> $OUTFILE
     echo "t cal -ituner load d:\goprawn.config" >> $OUTFILE
     echo "sleep 1" >> $OUTFILE
     echo "" >> $OUTFILE
     
-    echo "Writing $PRAWNCONF"
+    echo "Writing $GOPRAWNCONF"
     #Write any necessary script commands to goprawn.config
-    echo "# Generated by XYC ${VERS}, `date`" > $PRAWNCONF
-    echo "# https://github.com/alex-agency/XYC" >> $PRAWNCONF
-    echo "# GoPrawn config by nutsey" >> $PRAWNCONF
-    echo "system.user_mode Normal" >> $PRAWNCONF
-    echo "system.tuning_mode IMG_MODE_VIDEO" >> $PRAWNCONF
-    echo "system.tuning_mode_ext SINGLE_SHOT" >> $PRAWNCONF
-    echo "system.jpg_quality 100" >> $PRAWNCONF
-    echo "#aaa_function.ae_op 1" >> $PRAWNCONF
-    echo "#aaa_function.awb_op 1" >> $PRAWNCONF
-    echo "#aaa_function.adj_op 1" >> $PRAWNCONF
-    echo "static_bad_pixel_correction.enable 3" >> $PRAWNCONF
-    echo "auto_bad_pixel_correction.enable 4" >> $PRAWNCONF
-    echo "cfa_leakage_filter.enable 1" >> $PRAWNCONF
-    echo "cfa_noise_filter.enable 0" >> $PRAWNCONF
-    echo "#anti_aliasing.enable 1" >> $PRAWNCONF
-    echo "chroma_median_filter.enable 1" >> $PRAWNCONF
-    echo "chroma_median_filter.cb_strength 160" >> $PRAWNCONF
-    echo "chroma_median_filter.cr_strength 128" >> $PRAWNCONF
-    echo "demosaic.activity_thresh 3" >> $PRAWNCONF
-    echo "demosaic.grad_noise_thresh 32" >> $PRAWNCONF
-    if [ -z $SHR ]; then
-        echo "sharpening_fir.fir_strength 64" >> $PRAWNCONF
-        echo "sharpening_coring.coring_table 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14" >> $PRAWNCONF
-        echo "directional_sharpening.enable 0" >> $PRAWNCONF
+    echo "# Generated by XYC $VERS, `date`" > $GOPRAWNCONF
+    echo "# https://github.com/alex-agency/XYC" >> $GOPRAWNCONF
+    echo "# GoPrawn config by nutsey" >> $GOPRAWNCONF
+    echo "system.user_mode Normal" >> $GOPRAWNCONF
+    echo "system.tuning_mode IMG_MODE_VIDEO" >> $GOPRAWNCONF
+    echo "system.tuning_mode_ext SINGLE_SHOT" >> $GOPRAWNCONF
+    echo "system.jpg_quality 100" >> $GOPRAWNCONF
+    echo "#aaa_function.ae_op 1" >> $GOPRAWNCONF
+    echo "#aaa_function.awb_op 1" >> $GOPRAWNCONF
+    echo "#aaa_function.adj_op 1" >> $GOPRAWNCONF
+    echo "static_bad_pixel_correction.enable 3" >> $GOPRAWNCONF
+    echo "auto_bad_pixel_correction.enable 4" >> $GOPRAWNCONF
+    echo "cfa_leakage_filter.enable 1" >> $GOPRAWNCONF
+    echo "cfa_noise_filter.enable 0" >> $GOPRAWNCONF
+    echo "#anti_aliasing.enable 1" >> $GOPRAWNCONF
+    echo "chroma_median_filter.enable 1" >> $GOPRAWNCONF
+    echo "chroma_median_filter.cb_strength 160" >> $GOPRAWNCONF
+    echo "chroma_median_filter.cr_strength 128" >> $GOPRAWNCONF
+    echo "demosaic.activity_thresh 3" >> $GOPRAWNCONF
+    echo "demosaic.grad_noise_thresh 32" >> $GOPRAWNCONF
+    if [ -z "$SHR" ]; then
+        echo "sharpening_fir.fir_strength 64" >> $GOPRAWNCONF
+        echo "sharpening_coring.coring_table 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14" >> $GOPRAWNCONF
+        echo "directional_sharpening.enable 0" >> $GOPRAWNCONF
     fi
-    echo "spatial_filter.mode 0" >> $PRAWNCONF
-    echo "video_mctf.enable 1" >> $PRAWNCONF
-    echo "chromatic_aberration_correction.enable 1" >> $PRAWNCONF
-    echo "chroma_filt.enable 0" >> $PRAWNCONF
+    echo "spatial_filter.mode 0" >> $GOPRAWNCONF
+    echo "video_mctf.enable 1" >> $GOPRAWNCONF
+    echo "chromatic_aberration_correction.enable 1" >> $GOPRAWNCONF
+    echo "chroma_filt.enable 0" >> $GOPRAWNCONF
+    echo "" >> $GOPRAWNCONF
   fi
 
-  if [[ ! -z $AUTAN ]]; then
+  if [ -n "$AUTAN" ]; then
     echo "#HDRParams: $AUTAN $HDR1 $HDR2 $HDR3" >> $OUTFILE
     echo "#HDR script by nutsey" >> $OUTFILE
     echo "sleep 7" >> $OUTFILE
@@ -1675,9 +1835,9 @@ promptToRestart ()
 
 updateXYC ()
 {
-  local REPLY=${XYC_N}
-  read -p "${XYC_UPDATE_NOW_PROMPT}? [${XYC_ENTER}=$REPLY]: " REPLY
-  if [[ -z $REPLY || "$REPLY" == ${XYC_N} ]]; then
+  local REPLY
+  read -p "${XYC_UPDATE_NOW_PROMPT} [${XYC_ENTER}=n]: " REPLY
+  if [[ -z "$REPLY" || "$REPLY" == ${XYC_N} ]]; then
     return 1;
   fi
   echo ""
@@ -1732,7 +1892,7 @@ if [ "$EXITACTION" == "update" ]; then
     echo " ${XYC_UPDATE_COMPLETE}"
   else
     echo ""
-    echo " ${XYC_UPDATE_MANUAL}"
+    echo " ${XYC_UPDATE_MANUAL}:"
     echo " https://github.com/alex-agency/XYC.git "
   fi
   echo ""
