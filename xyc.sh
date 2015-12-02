@@ -571,10 +571,10 @@ parseExistingAutoexec ()
 {
   #Parse existing values from autoexec.ash
   ISO=$(grep "t ia2 -ae exp" $AASH 2>/dev/null | cut -d " " -f 5)
-  if [[ -n "$ISO" && $ISO -eq 0 ]]; then unset ISO; fi
+  if [ $ISO -eq 0 2> /dev/null ]; then unset ISO; fi
   
   EXP=$(grep "t ia2 -ae exp" $AASH 2>/dev/null | cut -d " " -f 6)
-  if [[ -n "$EXP" && $EXP -eq 0 ]]; then unset EXP; fi
+  if [ $EXP -eq 0 2> /dev/null ]; then unset EXP; fi
   
   NR=$(grep "t ia2 -adj tidx" $AASH 2>/dev/null | cut -d " " -f 6)
   GAMMA=$(grep "t ia2 -adj gamma" $AASH 2>/dev/null | cut -d " " -f 5)
@@ -685,6 +685,7 @@ resetCameraSettings ()
 
 setMissingValues ()
 {
+  expView $EXP
   setRESView
   setBITView
 }
@@ -1362,7 +1363,7 @@ showPresetsList ()
     done
     local REPLY
     read -p "${XYC_SELECT_OPTION}: " REPLY
-    if [[ -n "$REPLY" && $REPLY -ne 0 ]]; then
+    if [[ $REPLY -lt $i && $REPLY -ge 1 ]]; then
       local NAME=$(echo $PRESET | cut -d ' ' -f$REPLY)
       if [ "${1}" == "load" ]; then
         loadPreset $NAME
@@ -1387,7 +1388,7 @@ loadPreset ()
   echo "Reading $PRESETS_FILE"
   while read line
   do
-    if echo $line | grep "${1}." >/dev/null; then
+    if echo $line | grep "${1}\." >/dev/null; then
       local PARAM=$(echo "$line" | cut -d '.' -f 2)
       local INFO=$(echo "$PARAM" | cut -d '#' -f 2)
       local VALUE=$(echo "$PARAM" | cut -d '=' -f 2 | cut -d ' ' -f 1)
@@ -1396,6 +1397,7 @@ loadPreset ()
       echo "$INFO: $VALUE"
     fi
   done < $PRESETS_FILE
+  setMissingValues
   echo "" 
   echo "${XYC_PRESET_LOADED}: $NAME"
   echo ""  
@@ -1407,8 +1409,9 @@ removePreset ()
 {
   clear
   echo "Writing $PRESETS_FILE"
-  echo "$(grep -v "${1}" $PRESETS_FILE)" > $PRESETS_FILE
-  echo "" 
+  echo "$(grep -v "^${1}\." $PRESETS_FILE)" > $PRESETS_FILE
+  echo "$(grep -v " ${1}$" $PRESETS_FILE)" > $PRESETS_FILE
+  echo ""
   echo "${XYC_PRESET_REMOVED}: $NAME"
   echo ""  
   read -p "[${XYC_ENTER}]"
@@ -1525,7 +1528,7 @@ writeAutoexec ()
     echo "" >> $CORCONF
   fi
 
-  if [[ -n "$RES" && $RES -eq 1 ]]; then
+  if [ $RES -eq 1 2> /dev/null ]; then
     echo "#set video $RESVIEW" >> $OUTFILE
     if [ $FPS -eq 1 ]; then                         #1280x720 24fps
       echo "writeb 0xC06CC426 0x28" >> $OUTFILE
@@ -1544,7 +1547,7 @@ writeAutoexec ()
       echo "writel 0xC05C309C 0x02D00500" >> $OUTFILE
     fi
     echo "" >> $OUTFILE
-  elif [[ -n "$RES" && $RES -eq 2 ]]; then
+  elif [ $RES -eq 2 2> /dev/null ]; then
     echo "#set video $RESVIEW" >> $OUTFILE
     if [ $FPS -eq 1 ]; then                         #1280x960 24fps
       echo "writeb 0xC06CC426 0x26" >> $OUTFILE
@@ -1560,7 +1563,7 @@ writeAutoexec ()
       echo "writel 0xC05C2E44 0x03C00500" >> $OUTFILE     
     fi
     echo "" >> $OUTFILE
-  elif [[ -n "$RES" && $RES -eq 3 ]]; then
+  elif [ $RES -eq 3 2> /dev/null ]; then
     echo "#set video $RESVIEW" >> $OUTFILE
     if [ $FPS -eq 1 ]; then                         #1600x1200 24fps
       echo "writeb 0xC06CC426 0x24" >> $OUTFILE
@@ -1576,7 +1579,7 @@ writeAutoexec ()
       echo "writel 0xC05C2D7C 0x04B00640" >> $OUTFILE    
     fi
     echo "" >> $OUTFILE
-  elif [[ -n "$RES" && $RES -eq 4 ]]; then
+  elif [ $RES -eq 4 2> /dev/null ]; then
     echo "#set video $RESVIEW" >> $OUTFILE
     if [ $FPS -eq 1 ]; then                         #1920x1080 24fps
       echo "writeb 0xC06CC426 0x21" >> $OUTFILE
@@ -1592,14 +1595,14 @@ writeAutoexec ()
       echo "writel 0xC05C2CC8 0x04380780" >> $OUTFILE
     fi
     echo "" >> $OUTFILE
-  elif [[ -n "$RES" && $RES -eq 5 ]]; then
+  elif [ $RES -eq 5 2> /dev/null ]; then
     echo "#set video $RESVIEW" >> $OUTFILE
     if [ $FPS -eq 2 ]; then                       #2304x1296 30fps                         
       echo "writeb 0xC06CC426 0x02" >> $OUTFILE
       echo "writel 0xC05C2CB4 0x05100900" >> $OUTFILE
     fi
     echo "" >> $OUTFILE
-  elif [[ -n "$RES" && $RES -eq 6 ]]; then
+  elif [ $RES -eq 6 2> /dev/null ]; then
     echo "#set video $RESVIEW" >> $OUTFILE
     if [ $FPS -eq 2 ]; then                       #2560x1440 30fps  
       echo "writeb 0xC06CC426 0x02" >> $OUTFILE
@@ -1897,7 +1900,7 @@ if [ "$EXITACTION" == "update" ]; then
   fi
   echo ""
   read -p "[${XYC_ENTER}]"  
-  bash $SCRIPT_DIR/xyc.sh 
+  sh $SCRIPT_DIR/xyc.sh 
 elif [ "$EXITACTION" == "reboot" ]; then
   echo ""
   echo " *********************************** "
