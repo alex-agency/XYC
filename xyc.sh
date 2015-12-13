@@ -39,6 +39,7 @@
 #                  - Increased script performance
 #                  - Fixed issue in XYC Update
 #                  - Fixed issue in HDR scripts
+#                  - Removed GoPrawn script
 # 0.3.3 (Oct 2015) - Support latest 1.2.13 firmware
 # by Alex          - Added support file weight limit to 4GB
 #                  - Added 1440p resolution for test purpose
@@ -73,7 +74,6 @@ if [ ! -d "$FUSED" ]; then
   fi
 fi
 AASH=${FUSED}/autoexec.ash
-GOPRAWNCONF=${FUSED}/goprawn.config
 CORCONF=${FUSED}/sharpening.config
 THIS_SCRIPT="$SCRIPT_DIR/`basename "$0"`"
 LANGUAGE_FILE="$SCRIPT_DIR/xyc_strings.sh"
@@ -138,9 +138,7 @@ XYC_VIDEO_SETTINGS_MENU="Video Settings Menu"
 XYC_INCLUDE_USER_SETTINGS_PROMPT="Import settings from autoexec.xyc (y/n)"
 XYC_HDR_MENU="HDR Settings Menu"
 XYC_CANNOT_READ="WARNING: Cannot read/access"
-XYC_GOPRAWN="GoPrawn"
 XYC_USER_IMPORT="Import User settings"
-XYC_GOPRAWN_PROMPT="Enable GoPrawn Nutsey script (y/n)"
 XYC_EXPOSURE_MENU="Exposure Setting"
 XYC_ISO_MENU="ISO Setting"
 XYC_SEC="sec"
@@ -238,7 +236,7 @@ welcome ()
   clear
   echo ""
   echo " *  Xiaomi Yi Configurator  * "
-  echo " *  12/08/2015  ${VERS}  * "
+  echo " *  12/13/2015  ${VERS}  * "
   echo ""
 }
 
@@ -317,17 +315,12 @@ showPhotoSettingsMenu ()
     else 
       echo " [6] ${XYC_SHARPNESS}    : $SHR $FIR $COR"
     fi
-    if [ "$GOPRAWN" == ${XYC_Y} ]; then 
-      echo " [7] ${XYC_GOPRAWN}      : ${XYC_YES}" 
-    else 
-      echo " [7] ${XYC_GOPRAWN}      : ${XYC_NO}"
-    fi
     if [ "$RAW" == ${XYC_Y} ]; then 
-      echo " [8] ${XYC_CREATE_RAW}   : ${XYC_YES}" 
+      echo " [7] ${XYC_CREATE_RAW}   : ${XYC_YES}" 
     else 
-      echo " [8] ${XYC_CREATE_RAW}   : ${XYC_NO}"
+      echo " [7] ${XYC_CREATE_RAW}   : ${XYC_NO}"
     fi
-    echo " [9] ${XYC_SAVE_AND_BACK}"
+    echo " [8] ${XYC_SAVE_AND_BACK}"
     
     read -p "${XYC_SELECT_OPTION}: " REPLY
     case $REPLY in
@@ -337,9 +330,8 @@ showPhotoSettingsMenu ()
       4) getAutoKneeInput; clear;;
       5) getVibSatInput; clear;;
       6) getSharpnessInput; clear;;
-      7) getGoPrawnInput; clear;;
-      8) getRawInput; clear;;
-      9) clear; return;;
+      7) getRawInput; clear;;
+      8) clear; return;;
       *) clear; echo "${XYC_INVALID_CHOICE}";;
     esac
   done
@@ -385,27 +377,22 @@ showVideoSettingsMenu ()
     else 
       echo " [6] ${XYC_SHARPNESS}    : $SHR $FIR $COR" 
     fi
-    if [ "$GOPRAWN" == ${XYC_Y} ]; then 
-      echo " [7] ${XYC_GOPRAWN}      : ${XYC_YES}" 
-    else 
-      echo " [7] ${XYC_GOPRAWN}      : ${XYC_NO}"
-    fi
     if [ -z "$RES" ]; then 
-      echo " [8] ${XYC_RESOLUTION}   : ${XYC_DEFAULT}" 
+      echo " [7] ${XYC_RESOLUTION}   : ${XYC_DEFAULT}" 
     else
-      echo " [8] ${XYC_RESOLUTION}   : $RESVIEW"
+      echo " [7] ${XYC_RESOLUTION}   : $RESVIEW"
     fi
     if [ -z "$BIT" ]; then 
-      echo " [9] ${XYC_BITRATE}  : ${XYC_DEFAULT}" 
+      echo " [8] ${XYC_BITRATE}  : ${XYC_DEFAULT}" 
     else
-      echo " [9] ${XYC_BITRATE}  : $BITVIEW"
+      echo " [8] ${XYC_BITRATE}  : $BITVIEW"
     fi
     if [ "$BIG_FILE" == ${XYC_Y} ]; then 
-      echo " [10] ${XYC_BIG_FILE}   : ${XYC_YES}" 
+      echo " [9] ${XYC_BIG_FILE}    : ${XYC_YES}" 
     else
-      echo " [10] ${XYC_BIG_FILE}   : ${XYC_NO}"
+      echo " [9] ${XYC_BIG_FILE}    : ${XYC_NO}"
     fi
-    echo " [11] ${XYC_SAVE_AND_BACK}"
+    echo " [10] ${XYC_SAVE_AND_BACK}"
 
     read -p "${XYC_SELECT_OPTION}: " REPLY
     case $REPLY in
@@ -415,11 +402,10 @@ showVideoSettingsMenu ()
       4) getAutoKneeInput; clear;;
       5) getVibSatInput; clear;;
       6) getSharpnessInput; clear;;
-      7) getGoPrawnInput; clear;;
-      8) getVideoResolutionInput; clear;;
-      9) getVideoBitrateInput; clear;;
-      10) getBigFileInput; clear;;
-      11) clear; return;;
+      7) getVideoResolutionInput; clear;;
+      8) getVideoBitrateInput; clear;;
+      9) getBigFileInput; clear;;
+      10) clear; return;;
       *) clear; echo "${XYC_INVALID_CHOICE}";;
     esac
   done
@@ -625,7 +611,6 @@ parseCommandLine ()
       -k) AUTOKNEE=$2; shift;;
       -s) VIBSAT=$2; shift;;
       -r) RAW=$2; shift;;
-      -p) GOPRAWN=$2; shift;;
       -b) BIG_FILE=$2; shift;;
       -u) INC_USER=$2; shift;;
       -t) TLMODE=$2; shift;;
@@ -659,9 +644,6 @@ parseExistingAutoexec ()
 
   grep -q "t app test debug_dump 14" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RAW=${XYC_Y}; fi
-
-  grep -q "goprawn.config" $AASH 2>/dev/null
-  if [ $? -eq 0 ]; then GOPRAWN=${XYC_Y}; fi
 
   grep -q "t ia2 -3a" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then AAA=${XYC_Y}; fi
@@ -759,7 +741,7 @@ resetCameraSettings ()
   unset EXP ISO AWB RAW
   unset NR AAA GAMMA RES FPS BIT BIG_FILE 
   unset SHR FIR COR
-  unset GOPRAWN AUTOKNEE VIBSAT
+  unset AUTOKNEE VIBSAT
   unset TLMODE TLDELAY TLNUM TLONCE TLOFF
   unset AUTAN HDR1 HDR2 HDR3
   unset INC_USER
@@ -855,7 +837,6 @@ expView ()
 getISOInput ()
 {
   clear
-  echo ""
   echo " *********** ${XYC_ISO_MENU} *********** "
   echo " * (0)=Auto   (5)=1600             * "
   echo " * (1)=100    (6)=3200             * "
@@ -1044,14 +1025,6 @@ getSharpCorInput ()
   else
     COR=104; 
   fi
-}
-
-getGoPrawnInput ()
-{
-  clear
-  local REPLY
-  read -p "${XYC_GOPRAWN_PROMPT} [${XYC_ENTER}]: " REPLY
-  if [[ "$REPLY" == ${XYC_Y} || "$REPLY" == ${XYC_N} ]]; then GOPRAWN=$REPLY; fi
 }
 
 getVideoResolutionInput ()
@@ -1421,7 +1394,6 @@ getCreatePresetInput ()
   writePreset $NAME "SHR" "Sharpness Mode"
   writePreset $NAME "FIR" "Sharpness Digital Filter"
   writePreset $NAME "COR" "Sharpness Coring"
-  writePreset $NAME "GOPRAWN" "GoPrawn"
   writePreset $NAME "AAA" "AAA"
   writePreset $NAME "GAMMA" "Gamma"
   writePreset $NAME "AUTOKNEE" "Auto Knee"
@@ -1552,10 +1524,6 @@ removeAutoexec ()
 {
   echo "${XYC_DELETING} $AASH" 
   rm -f $AASH
-  if [[ -f "$GOPRAWNCONF" && -w "$GOPRAWNCONF" ]]; then
-    echo "${XYC_DELETING} $GOPRAWNCONF" 
-    rm -f $GOPRAWNCONF
-  fi
   if [[ -f "$CORCONF" && -w "$CORCONF" ]]; then
     echo "${XYC_DELETING} $CORCONF" 
     rm -f $CORCONF
@@ -1796,47 +1764,7 @@ writeAutoexec ()
     echo "t ia2 -3a 1 1 0 1" >> $OUTFILE
     echo "" >> $OUTFILE
   fi
-
-  if [ "$GOPRAWN" == ${XYC_Y} ]; then
-    echo "#load GoPrawn config" >> $OUTFILE
-    echo "t cal -ituner load d:\goprawn.config" >> $OUTFILE
-    echo "sleep 1" >> $OUTFILE
-    echo "" >> $OUTFILE
-    
-    echo "Writing $GOPRAWNCONF"
-    #Write any necessary script commands to goprawn.config
-    echo "# Generated by XYC $VERS, `date`" > $GOPRAWNCONF
-    echo "# https://github.com/alex-agency/XYC" >> $GOPRAWNCONF
-    echo "# GoPrawn config by nutsey" >> $GOPRAWNCONF
-    echo "system.user_mode Normal" >> $GOPRAWNCONF
-    echo "system.tuning_mode IMG_MODE_VIDEO" >> $GOPRAWNCONF
-    echo "system.tuning_mode_ext SINGLE_SHOT" >> $GOPRAWNCONF
-    echo "system.jpg_quality 100" >> $GOPRAWNCONF
-    echo "#aaa_function.ae_op 1" >> $GOPRAWNCONF
-    echo "#aaa_function.awb_op 1" >> $GOPRAWNCONF
-    echo "#aaa_function.adj_op 1" >> $GOPRAWNCONF
-    echo "static_bad_pixel_correction.enable 3" >> $GOPRAWNCONF
-    echo "auto_bad_pixel_correction.enable 4" >> $GOPRAWNCONF
-    echo "cfa_leakage_filter.enable 1" >> $GOPRAWNCONF
-    echo "cfa_noise_filter.enable 0" >> $GOPRAWNCONF
-    echo "#anti_aliasing.enable 1" >> $GOPRAWNCONF
-    echo "chroma_median_filter.enable 1" >> $GOPRAWNCONF
-    echo "chroma_median_filter.cb_strength 160" >> $GOPRAWNCONF
-    echo "chroma_median_filter.cr_strength 128" >> $GOPRAWNCONF
-    echo "demosaic.activity_thresh 3" >> $GOPRAWNCONF
-    echo "demosaic.grad_noise_thresh 32" >> $GOPRAWNCONF
-    if [ -z "$SHR" ]; then
-        echo "sharpening_fir.fir_strength 64" >> $GOPRAWNCONF
-        echo "sharpening_coring.coring_table 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14" >> $GOPRAWNCONF
-        echo "directional_sharpening.enable 0" >> $GOPRAWNCONF
-    fi
-    echo "spatial_filter.mode 0" >> $GOPRAWNCONF
-    echo "video_mctf.enable 1" >> $GOPRAWNCONF
-    echo "chromatic_aberration_correction.enable 1" >> $GOPRAWNCONF
-    echo "chroma_filt.enable 0" >> $GOPRAWNCONF
-    echo "" >> $GOPRAWNCONF
-  fi
-  
+ 
   if [ "$INC_USER" == ${XYC_Y} ]; then
     if [[ -f "$USER_SETTINGS_FILE" && -r "$USER_SETTINGS_FILE" ]]; then
     echo "#User settings imported from $USER_SETTINGS_FILE" >> $OUTFILE
@@ -1845,7 +1773,7 @@ writeAutoexec ()
       echo "" >> $OUTFILE
     else
       echo "${XYC_CANNOT_READ} $USER_SETTINGS_FILE"
-	  echo "#${XYC_CANNOT_READ} $USER_SETTINGS_FILE" >> $OUTFILE
+      echo "#${XYC_CANNOT_READ} $USER_SETTINGS_FILE" >> $OUTFILE
     fi
   fi
   
