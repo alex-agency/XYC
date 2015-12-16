@@ -30,7 +30,7 @@
 # Changelog:
 #
 # 0.3.5 (Dec 2015) - Added SD formatting, removing files only in /DCIM/100MEDIA/
-# by toyorg        - Added ability to change WiFi mode to Client
+# by toyorg
 # 0.3.4 (Dec 2015) - Added Time-lapse script
 # by Alex          - Added ability to use Time-lapse with HDR, RAW and others settings
 #                  - Added ability to save and reuse different presets
@@ -230,8 +230,8 @@ XYC_REMOVE_FILE="Remove"
 XYC_REMOVE_INFO="Removing files only in /DCIM/100MEDIA/"
 XYC_WIFI="WiFi settings"
 XYC_WIFI_CLIENT="WiFi in client mode"
-XYC_WIFI_WATCHDOG="WiFi watchdog"
-XYC_WIFI_INFO="Edit watchdog.sh BEFORE using!"
+XYC_WIFI_WATCHDOG"WiFi watchdog"
+XYC_WIFI_INFO="Edit watchdog.sh and wpa_supplicant.conf BEFORE using!"
 
 #If language file exists, source it to override English language UI strings
 if [[ -s "$LANGUAGE_FILE" && -r "$LANGUAGE_FILE" ]]; then
@@ -254,7 +254,7 @@ showMainMenu ()
   local REPLY
   while [ "$EXITACTION" == "" ]
   do
-       echo "    ====== ${XYC_MAIN_MENU} ====="
+    echo "    ====== ${XYC_MAIN_MENU} ====="
     echo " [1] ${XYC_EDIT_PHOTO_SETTINGS}"
     echo " [2] ${XYC_EDIT_VIDEO_SETTINGS}"
     echo " [3] ${XYC_CREATE_TIME_LAPSE}"
@@ -642,7 +642,6 @@ wifiSettings ()
     esac
   done
 }
-
 
 getCleanUpInput ()
 {
