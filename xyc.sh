@@ -227,7 +227,6 @@ XYC_RESTART_TO_APPLY="Restart your camera to apply settings."
 XYC_INVINITY="Invinity"
 XYC_FORMAT="SD card formatting"
 XYC_REMOVE_FILE="Remove"
-XYC_REMOVING="Removing"
 XYC_REMOVE_INFO="Removing files only in /DCIM/100MEDIA/"
 
 #If language file exists, source it to override English language UI strings
