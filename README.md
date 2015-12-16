@@ -37,7 +37,7 @@ This script runs inside the Xiaomi Yi camera and allows the user to enable RAW f
 # Changelog
 
 0.3.5 (Dec 2015) by toyorg
-- Added SD formatting, removing files only in /DCIM/100MEDIA/
+- Added SD formatting, removing files only in `/DCIM/100MEDIA/`
 
 0.3.4 (Dec 2015) by Alex
 - Added Time-lapse script
