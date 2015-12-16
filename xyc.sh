@@ -601,15 +601,15 @@ formatSD ()
     echo " [3] ${XYC_REMOVE_FILE} MP4"
     echo " [4] ${XYC_REMOVE_FILE} THM"
     echo " [5] ${XYC_REMOVE_FILE} All"
-    echo " [6] ${XYC_EXIT}"
+    echo " [6] ${XYC_BACK}"
 
     read -p "${XYC_SELECT_OPTION}: " REPLY
     case $REPLY in
-      1) echo "${XYC_REMOVEING_FILE} RAW"; lu_util exec "rm -f ${FUSED}/DCIM/100MEDIA/*.RAW"; clear;;
-      2) echo "${XYC_REMOVEING_FILE} JPEG"; lu_util exec "rm -f ${FUSED}/DCIM/100MEDIA/*.jpg"; clear;;
-      3) echo "${XYC_REMOVEING_FILE} MP4"; lu_util exec "rm -f ${FUSED}/DCIM/100MEDIA/*.mp4"; clear;;
-      4) echo "${XYC_REMOVEING_FILE} THM"; lu_util exec "rm -f ${FUSED}/DCIM/100MEDIA/*.THM"; lu_util exec "rm -f ${FUSED}/DCIM/100MEDIA/*thm.mp4" clear;;
-      5) echo "${XYC_REMOVEING_FILE} All"; lu_util exec "rm -f ${FUSED}/DCIM/100MEDIA/*.*"; clear;;
+      1) echo "${XYC_REMOVING_FILE} RAW"; lu_util exec "rm -f ${FUSED}/DCIM/100MEDIA/*.RAW"; clear;;
+      2) echo "${XYC_REMOVING_FILE} JPEG"; lu_util exec "rm -f ${FUSED}/DCIM/100MEDIA/*.jpg"; clear;;
+      3) echo "${XYC_REMOVING_FILE} MP4"; lu_util exec "rm -f ${FUSED}/DCIM/100MEDIA/*.mp4"; clear;;
+      4) echo "${XYC_REMOVING_FILE} THM"; lu_util exec "rm -f ${FUSED}/DCIM/100MEDIA/*.THM"; lu_util exec "rm -f ${FUSED}/DCIM/100MEDIA/*thm.mp4" clear;;
+      5) echo "${XYC_REMOVING_FILE} All"; lu_util exec "rm -f ${FUSED}/DCIM/100MEDIA/*.*"; clear;;
       6) clear; return;;
       *) clear; echo "${XYC_INVALID_CHOICE}";;
     esac
