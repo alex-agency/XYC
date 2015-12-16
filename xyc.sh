@@ -30,7 +30,7 @@
 # Changelog:
 #
 # 0.3.5 (Dec 2015) - Added SD formatting, removing files only in /DCIM/100MEDIA/
-# by toyorg
+# by toyorg        - Added ability to change WiFi mode to Client
 # 0.3.4 (Dec 2015) - Added Time-lapse script
 # by Alex          - Added ability to use Time-lapse with HDR, RAW and others settings
 #                  - Added ability to save and reuse different presets
@@ -228,6 +228,10 @@ XYC_INVINITY="Invinity"
 XYC_FORMAT="SD card formatting"
 XYC_REMOVE_FILE="Remove"
 XYC_REMOVE_INFO="Removing files only in /DCIM/100MEDIA/"
+XYC_WIFI="WiFi settings"
+XYC_WIFI_CLIENT="WiFi in client mode"
+XYC_WIFI_WATCHDOG="WiFi watchdog"
+XYC_WIFI_INFO="Edit watchdog.sh BEFORE using!"
 
 #If language file exists, source it to override English language UI strings
 if [[ -s "$LANGUAGE_FILE" && -r "$LANGUAGE_FILE" ]]; then
@@ -250,7 +254,7 @@ showMainMenu ()
   local REPLY
   while [ "$EXITACTION" == "" ]
   do
-    echo "    ====== ${XYC_MAIN_MENU} ====="
+       echo "    ====== ${XYC_MAIN_MENU} ====="
     echo " [1] ${XYC_EDIT_PHOTO_SETTINGS}"
     echo " [2] ${XYC_EDIT_VIDEO_SETTINGS}"
     echo " [3] ${XYC_CREATE_TIME_LAPSE}"
@@ -260,9 +264,10 @@ showMainMenu ()
     echo " [7] ${XYC_RESET_SETTINGS}"
     echo " [8] ${XYC_SHOW_CARD_SPACE}"
     echo " [9] ${XYC_FORMAT}"
-    echo " [10] ${XYC_RESTART_CAMERA}"
-    echo " [11] ${XYC_SCRIPT_UPDATE}"
-    echo " [12] ${XYC_EXIT}"
+    echo " [10] ${XYC_WIFI}"
+    echo " [11] ${XYC_RESTART_CAMERA}"
+    echo " [12] ${XYC_SCRIPT_UPDATE}"
+    echo " [13] ${XYC_EXIT}"
 
     read -p "${XYC_SELECT_OPTION}: " REPLY
     clear
@@ -277,9 +282,10 @@ showMainMenu ()
       7) removeAutoexec; resetCameraSettings;;
       8) showSpaceUsage;;
       9) formatSD;;
-      10) EXITACTION="reboot";;
-      11) EXITACTION="update";;
-      12) EXITACTION="nothing";;
+      10) wifiSettings;;
+      11) EXITACTION="reboot";;
+      12) EXITACTION="update";;
+      13) EXITACTION="nothing";;
       *) echo "${XYC_INVALID_CHOICE}";;
     esac
   done
@@ -614,6 +620,29 @@ formatSD ()
     esac
   done
 }
+
+wifiSettings ()
+{
+  local REPLY
+  clear
+  while true
+  do
+    echo "    ====== ${XYC_WIFI} ====="
+    echo " ${XYC_WIFI_INFO}"
+    echo " [1] ${XYC_WIFI_CLIENT}"
+    echo " [2] ${XYC_WIFI_WATCHDOG}"
+    echo " [3] ${XYC_BACK}"
+
+    read -p "${XYC_SELECT_OPTION}: " REPLY
+    case $REPLY in
+      1) WIFI_CLIENT=${XYC_Y};;
+      2) WIFI_WATCHDOG=${XYC_Y};;
+      3) clear; return;;
+      *) clear; echo "${XYC_SAVE_AND_BACK}";;
+    esac
+  done
+}
+
 
 getCleanUpInput ()
 {
@@ -1934,6 +1963,20 @@ writeAutoexec ()
       echo "poweroff yes" >> $OUTFILE
     fi
     echo "" >> $OUTFILE
+  fi
+  
+  if [ "$WIFI_CLIENT" == ${XYC_Y} ]; then
+    echo "sleep 10" >> $OUTFILE
+    echo "t pwm 1 enable" >> $OUTFILE
+    echo "sleep .5" >> $OUTFILE
+    echo "t pwm 1 disable" >> $OUTFILE
+    echo "lu_util exec '/tmp/fuse_d/wifi/sta.sh'" >> $OUTFILE
+    echo "t pwm 1 enable" >> $OUTFILE
+    echo "sleep 1" >> $OUTFILE
+    echo "t pwm 1 disable" >> $OUTFILE
+  fi
+  if [ "$WIFI_WATCHDOG" == ${XYC_Y} ]; then
+    echo "lu_util exec '/tmp/fuse_d/wifi/watchdog.sh'" >> $OUTFILE
   fi
 
   echo ${XYC_RESTART_TO_APPLY}
