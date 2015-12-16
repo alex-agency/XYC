@@ -36,6 +36,22 @@ This script runs inside the Xiaomi Yi camera and allows the user to enable RAW f
 
 # Changelog
 
+0.3.5 (Dec 2015) by toyorg
+- Added SD formatting, removing files only in `/DCIM/100MEDIA/`
+
+0.3.4 (Dec 2015) by Alex
+- Added Time-lapse script
+- Added ability to use Time-lapse with HDR, RAW and others settings
+- Added ability to save and reuse different presets
+- Added ability to set bitrates for all resolutions
+- Added new video frequencies: 24fps, 48fps
+- Resolved 2560x1440 resolution, it's upscaling from 2304x1296
+- Added ability to adjust Auto Knee, Gamma level
+- Increased script performance
+- Fixed issue in XYC Update
+- Fixed issue in HDR scripts
+- Removed GoPrawn script
+            
 0.3.3 (Oct 2015) by Alex
 - Support latest 1.2.13 firmware
 - Added support file weight limit to 4GB
