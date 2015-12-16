@@ -227,7 +227,7 @@ XYC_RESTART_TO_APPLY="Restart your camera to apply settings."
 XYC_INVINITY="Invinity"
 XYC_FORMAT="SD card formatting"
 XYC_REMOVE_FILE="Remove"
-XYC_REMOVING_FILE="Removing"
+XYC_REMOVING="Removing"
 XYC_REMOVE_INFO="Removing files only in /DCIM/100MEDIA/"
 
 #If language file exists, source it to override English language UI strings
@@ -605,11 +605,11 @@ formatSD ()
 
     read -p "${XYC_SELECT_OPTION}: " REPLY
     case $REPLY in
-      1) echo "${XYC_REMOVING_FILE} RAW"; lu_util exec "rm -f ${FUSED}/DCIM/100MEDIA/*.RAW"; clear;;
-      2) echo "${XYC_REMOVING_FILE} JPEG"; lu_util exec "rm -f ${FUSED}/DCIM/100MEDIA/*.jpg"; clear;;
-      3) echo "${XYC_REMOVING_FILE} MP4"; lu_util exec "rm -f ${FUSED}/DCIM/100MEDIA/*.mp4"; clear;;
-      4) echo "${XYC_REMOVING_FILE} THM"; lu_util exec "rm -f ${FUSED}/DCIM/100MEDIA/*.THM"; lu_util exec "rm -f ${FUSED}/DCIM/100MEDIA/*thm.mp4" clear;;
-      5) echo "${XYC_REMOVING_FILE} All"; lu_util exec "rm -f ${FUSED}/DCIM/100MEDIA/*.*"; clear;;
+      1) echo "${XYC_REMOVING} RAW"; lu_util exec "rm -f ${FUSED}/DCIM/100MEDIA/*.RAW"; clear;;
+      2) echo "${XYC_REMOVING} JPEG"; lu_util exec "rm -f ${FUSED}/DCIM/100MEDIA/*.jpg"; clear;;
+      3) echo "${XYC_REMOVING} MP4"; lu_util exec "rm -f ${FUSED}/DCIM/100MEDIA/*.mp4"; clear;;
+      4) echo "${XYC_REMOVING} THM"; lu_util exec "rm -f ${FUSED}/DCIM/100MEDIA/*.THM"; lu_util exec "rm -f ${FUSED}/DCIM/100MEDIA/*thm.mp4" clear;;
+      5) echo "${XYC_REMOVING} All"; lu_util exec "rm -f ${FUSED}/DCIM/100MEDIA/*.*"; clear;;
       6) clear; return;;
       *) clear; echo "${XYC_INVALID_CHOICE}";;
     esac
