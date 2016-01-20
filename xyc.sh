@@ -29,6 +29,8 @@
 #
 # Changelog:
 #
+# 0.3.5 (Jan 2016) - Added SuperView feature
+# by Alex          - Added WaffleFPV preset
 # 0.3.4 (Dec 2015) - Added Time-lapse script
 # by Alex          - Added ability to use Time-lapse with HDR, RAW and others settings 
 #                  - Added ability to save and reuse different presets
@@ -63,7 +65,7 @@
 # undocumented features of the Xiaomi Yi. Using this software may void your
 # camera's warranty and possibly damage your camera.  Use at your own risk!
 
-VERS="0.3.4 Alex"
+VERS="0.3.5 Alex"
 FUSED=/tmp/fuse_d
 SCRIPT_DIR=$(cd `dirname "$0"` && pwd)
 WEB=/var/www
@@ -221,6 +223,7 @@ XYC_RUN_ONCE_ONLY_PROMPT="Remove time-lapse script when complete (y/n)"
 XYC_POWEROFF_WHEN_COMPLETE_PROMPT="Poweroff camera when complete (y/n)"
 XYC_RESTART_TO_APPLY="Restart your camera to apply settings."
 XYC_INVINITY="Invinity"
+XYC_SUPERVIEW="SuperView"
 
 #If language file exists, source it to override English language UI strings
 if [[ -s "$LANGUAGE_FILE" && -r "$LANGUAGE_FILE" ]]; then
@@ -234,7 +237,7 @@ welcome ()
   clear
   echo ""
   echo " *  Xiaomi Yi Configurator  * "
-  echo " *  12/13/2015  ${VERS}  * "
+  echo " *  01/20/2016  ${VERS}  * "
   echo ""
 }
 
@@ -380,17 +383,22 @@ showVideoSettingsMenu ()
     else
       echo " [7] ${XYC_RESOLUTION}   : $RESVIEW"
     fi
-    if [ -z "$BIT" ]; then 
-      echo " [8] ${XYC_BITRATE}  : ${XYC_DEFAULT}" 
+    if [ -z "$SVIEW" ]; then 
+      echo " [8] ${XYC_SUPERVIEW}    : ${XYC_DISABLE}" 
     else
-      echo " [8] ${XYC_BITRATE}  : $BITVIEW"
+      echo " [8] ${XYC_SUPERVIEW}    : $SVIEW"
+    fi
+    if [ -z "$BIT" ]; then 
+      echo " [9] ${XYC_BITRATE}  : ${XYC_DEFAULT}" 
+    else
+      echo " [9] ${XYC_BITRATE}  : $BITVIEW"
     fi
     if [ "$BIG_FILE" == ${XYC_Y} ]; then 
-      echo " [9] ${XYC_BIG_FILE}    : ${XYC_YES}" 
+      echo " [10] ${XYC_BIG_FILE}   : ${XYC_YES}" 
     else
-      echo " [9] ${XYC_BIG_FILE}    : ${XYC_NO}"
+      echo " [10] ${XYC_BIG_FILE}   : ${XYC_NO}"
     fi
-    echo " [10] ${XYC_SAVE_AND_BACK}"
+    echo " [11] ${XYC_SAVE_AND_BACK}"
 
     read -p "${XYC_SELECT_OPTION}: " REPLY
     case $REPLY in
@@ -401,9 +409,10 @@ showVideoSettingsMenu ()
       5) getVibSatInput; clear;;
       6) getSharpnessInput; clear;;
       7) getVideoResolutionInput; clear;;
-      8) getVideoBitrateInput; clear;;
-      9) getBigFileInput; clear;;
-      10) clear; return;;
+      8) getSuperViewInput; clear;;
+      9) getVideoBitrateInput; clear;;
+      10) getBigFileInput; clear;;
+      11) clear; return;;
       *) clear; echo "${XYC_INVALID_CHOICE}";;
     esac
   done
@@ -715,6 +724,13 @@ parseExistingAutoexec ()
   grep -q "writel 0xC05C2CB4 0x05A00A00" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then RES=6; FPS=2; fi
 
+  grep -q "writel 0xC05C2D7C 0x04380780" $AASH 2>/dev/null
+  if [ $? -eq 0 ]; then SVIEW="1080p@60"; fi
+  grep -q "writel 0xC05C2D90 0x05100900" $AASH 2>/dev/null
+  if [ $? -eq 0 ]; then SVIEW="1296p@30"; fi
+  grep -q "writel 0xC05C2D90 0x05A00A00" $AASH 2>/dev/null
+  if [ $? -eq 0 ]; then SVIEW="1440p@30"; fi
+
   grep -q "0x41A0" $AASH 2>/dev/null
   if [ $? -eq 0 ]; then BIT="0x41A0"; fi
   grep -q "0x41C8" $AASH 2>/dev/null
@@ -737,7 +753,7 @@ parseExistingAutoexec ()
 resetCameraSettings ()
 {
   unset EXP ISO AWB RAW
-  unset NR AAA GAMMA RES FPS BIT BIG_FILE 
+  unset NR AAA GAMMA RES FPS SVIEW BIT BIG_FILE 
   unset SHR FIR COR
   unset AUTOKNEE VIBSAT
   unset TLMODE TLDELAY TLNUM TLONCE TLOFF
@@ -1036,6 +1052,9 @@ getVideoResolutionInput ()
   echo " *********************************** "
   local REPLY=$RES
   read -p "${XYC_SELECT_OPTION}: 0-6: " REPLY
+  if [ -n "$REPLY" ]; then 
+    unset SVIEW
+  fi
   case $REPLY in 
     0) unset RES FPS; return;;
     1) RES=1; getVideoFrequencyInput;;
@@ -1073,6 +1092,26 @@ getVideoFrequencyInput ()
         fi;;
     *) FPS=2;;
   esac
+}
+
+getSuperViewInput ()
+{
+  clear
+  echo " ************ ${XYC_SUPERVIEW} ************ "
+  echo " * (0) ${XYC_DISABLE}                     * "
+  echo " * (1) 1920x1080 60 FPS            * "
+  echo " * (2) 2304x1296 30 FPS            * "
+  echo " * (3) 2560x1440 30 FPS            * "
+  echo " *********************************** "
+  local REPLY=$SVIEW
+  read -p "${XYC_SELECT_OPTION}: 0-3: " REPLY
+  case $REPLY in 
+    0) unset SVIEW RES FPS; return;;
+    1) SVIEW="1080p@60"; RES=3; FPS=4;;
+    2) SVIEW="1296p@30"; RES=3; FPS=2;;
+    3) SVIEW="1440p@30"; RES=3; FPS=2;;
+  esac
+  setRESView
 }
 
 getVideoBitrateInput ()
@@ -1399,6 +1438,7 @@ getCreatePresetInput ()
   writePreset $NAME "RES" "Resolution"
   writePreset $NAME "FPS" "FPS"
   writePreset $NAME "BIT" "Bitrate"
+  writePreset $NAME "SVIEW" "SuperView"
   writePreset $NAME "BIG_FILE" "4Gb files"
   writePreset $NAME "INC_USER" "Import User settings"
   writePreset $NAME "TLMODE" "Time-lapse Mode"
@@ -1655,18 +1695,25 @@ writeAutoexec ()
     echo "#set video $RESVIEW" >> $OUTFILE
     if [ $FPS -eq 1 ]; then                         #1600x1200 24fps
       echo "writeb 0xC06CC426 0x24" >> $OUTFILE
-      echo "writel 0xC05C2F5C 0x04B00640" >> $OUTFILE      
+      echo "writel 0xC05C2F5C 0x04B00640" >> $OUTFILE
+      echo "" >> $OUTFILE      
     elif [ $FPS -eq 2 ]; then                       #1600x1200 30fps
       echo "writeb 0xC06CC426 0x0D" >> $OUTFILE
-      echo "writel 0xC05C2D90 0x04B00640" >> $OUTFILE    
+      if [ -z "$SVIEW" ]; then
+        echo "writel 0xC05C2D90 0x04B00640" >> $OUTFILE
+        echo "" >> $OUTFILE 
+      fi    
     elif [ $FPS -eq 3 ]; then                       #1600x1200 48fps
       echo "writeb 0xC06CC426 0x23" >> $OUTFILE
-      echo "writel 0xC05C2F48 0x04B00640" >> $OUTFILE      
+      echo "writel 0xC05C2F48 0x04B00640" >> $OUTFILE
+      echo "" >> $OUTFILE    
     elif [ $FPS -eq 4 ]; then                       #1600x1200 60fps
       echo "writeb 0xC06CC426 0x0C" >> $OUTFILE
-      echo "writel 0xC05C2D7C 0x04B00640" >> $OUTFILE    
+      if [ -z "$SVIEW" ]; then 
+        echo "writel 0xC05C2D7C 0x04B00640" >> $OUTFILE
+        echo "" >> $OUTFILE 
+      fi    
     fi
-    echo "" >> $OUTFILE
   elif [ $RES -eq 4 2> /dev/null ]; then
     echo "#set video $RESVIEW" >> $OUTFILE
     if [ $FPS -eq 1 ]; then                         #1920x1080 24fps
@@ -1698,6 +1745,18 @@ writeAutoexec ()
     fi
     echo "" >> $OUTFILE
   fi
+
+  if [ -n "$SVIEW" ]; then 
+    echo "#stretch SuperView $SVIEW" >> $OUTFILE
+    if [ "$SVIEW" == "1080p@60" ]; then
+      echo "writel 0xC05C2D7C 0x04380780" >> $OUTFILE
+    elif [ "$SVIEW" == "1296p@30" ]; then
+      echo "writel 0xC05C2D90 0x05100900" >> $OUTFILE
+    elif [ "$SVIEW" == "1440p@30" ]; then
+      echo "writel 0xC05C2D90 0x05A00A00" >> $OUTFILE
+    fi
+    echo "" >> $OUTFILE
+  fi 
   
   if [ -n "$BIT" ]; then
     echo "#set $BITVIEW bitrate for all resolutions" >> $OUTFILE
