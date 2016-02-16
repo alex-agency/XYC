@@ -6,13 +6,11 @@ Xiaomi Yi Configurator (XYC)
 
 This script runs inside the Xiaomi Yi camera and allows the user to enable RAW file creation, and change photographic options such as exposure, ISO, whitebalance, etc. It is designed to be executed and accessed via a telnet client running on any phone, computer, tablet, etc.
 
-<img width="320" src="https://cloud.githubusercontent.com/assets/1122708/12181006/65ec7bc6-b588-11e5-910f-e8350db1694f.jpg">  <img width="320" src="https://cloud.githubusercontent.com/assets/1122708/12181007/65edf5d2-b588-11e5-9e22-08e21f26c711.jpg">
-<img width="320" src="https://cloud.githubusercontent.com/assets/1122708/12181009/65f06556-b588-11e5-8151-b04f1ea3f7bd.jpg">  <img width="320" src="https://cloud.githubusercontent.com/assets/1122708/12181010/65f0aaf2-b588-11e5-9dea-76664d2e410b.jpg">
-<img width="320" src="https://cloud.githubusercontent.com/assets/1122708/12181008/65ef2330-b588-11e5-804a-b224ab3808d6.jpg">  <img width="320" src="https://cloud.githubusercontent.com/assets/1122708/12181012/6a9b1c4a-b588-11e5-93db-72586539117f.jpg">
-<img width="320" src="https://cloud.githubusercontent.com/assets/1122708/12181015/6a9c5718-b588-11e5-855d-64aad59c1fa8.jpg">  <img width="320" src="https://cloud.githubusercontent.com/assets/1122708/12181016/6a9e44d8-b588-11e5-867a-ba0630e18c66.jpg">
-<img width="320" src="https://cloud.githubusercontent.com/assets/1122708/12181013/6a9bc9ec-b588-11e5-89ce-1064d42b31b1.jpg">  <img width="320" src="https://cloud.githubusercontent.com/assets/1122708/12181014/6a9c1c3a-b588-11e5-8d76-ba28f670ee1f.jpg">
-<img width="320" src="https://cloud.githubusercontent.com/assets/1122708/12181020/707c869e-b588-11e5-8471-0c35872baa2f.jpg">  <img width="320" src="https://cloud.githubusercontent.com/assets/1122708/12181018/707a762e-b588-11e5-85db-317d018b49f0.jpg">
-<img width="320" src="https://cloud.githubusercontent.com/assets/1122708/12181021/707ce0bc-b588-11e5-8e0f-336572893cd2.jpg">  <img width="320" src="https://cloud.githubusercontent.com/assets/1122708/12181019/707b85fa-b588-11e5-99c6-b597f2cc2d37.jpg">
+<img width="320" src="https://cloud.githubusercontent.com/assets/1122708/13090407/33c050ce-d4fe-11e5-93c0-07d54b7c7509.jpg">  <img width="320" src="https://cloud.githubusercontent.com/assets/1122708/13090408/33d6de7a-d4fe-11e5-9a33-fbb18f55df1a.jpg">
+<img width="320" src="https://cloud.githubusercontent.com/assets/1122708/13090410/33e39f66-d4fe-11e5-8893-c3fdc7a5e85d.jpg">  <img width="320" src="https://cloud.githubusercontent.com/assets/1122708/13090409/33e33bb6-d4fe-11e5-9c42-bbf8230638d3.jpg">
+<img width="320" src="https://cloud.githubusercontent.com/assets/1122708/13090412/33e4a6ea-d4fe-11e5-9560-203f0ee7d5c0.jpg">  <img width="320" src="https://cloud.githubusercontent.com/assets/1122708/13090411/33e4a564-d4fe-11e5-84e4-567fa5d262b4.jpg">
+<img width="320" src="https://cloud.githubusercontent.com/assets/1122708/13090418/39eb0a5c-d4fe-11e5-99bd-397156db7e63.jpg">  <img width="320" src="https://cloud.githubusercontent.com/assets/1122708/13090421/3a18ecd8-d4fe-11e5-9af0-a81595f6d788.jpg">
+<img width="320" src="https://cloud.githubusercontent.com/assets/1122708/13090420/3a1731d6-d4fe-11e5-9507-ff77746db632.jpg">  <img width="320" src="https://cloud.githubusercontent.com/assets/1122708/13090419/3a08d0e6-d4fe-11e5-8e1e-4eea50d874f5.jpg">
 
 # Installation
 
