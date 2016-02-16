@@ -29,6 +29,10 @@ This script runs inside the Xiaomi Yi camera and allows the user to enable RAW f
 
 # Changelog
 
+0.3.5 (Jan 2016) by Alex
+- Added SuperView feature
+- Added WaffleFPV preset
+
 0.3.4 (Dec 2015) by Alex
 - Added Time-lapse script
 - Added ability to use Time-lapse with HDR, RAW and others settings 
