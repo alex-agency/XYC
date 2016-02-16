@@ -31,7 +31,7 @@ This script runs inside the Xiaomi Yi camera and allows the user to enable RAW f
 
 1.0.1 (Feb 2016) by Alex
 - Simplified user interface for support different languages
-- Updated support for 6 languages
+- Updated support for 8 languages
 - Updated YiMAX preset
 - Updated WaffleFPV preset to V8
 - Better quality with Alex_Day preset
