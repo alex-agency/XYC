@@ -29,6 +29,19 @@ This script runs inside the Xiaomi Yi camera and allows the user to enable RAW f
 
 # Changelog
 
+1.0.1 (Feb 2016) by Alex
+- Simplified user interface for support different languages
+- Updated support for 6 languages
+- Updated YiMAX preset
+- Updated WaffleFPV preset to V8
+- Better quality with Alex_Day preset
+- Night vision with Alex_Night preset
+- Predefined saturation adjustments
+- Added scene mode
+- Renovate sharpness and coring
+- Save battery adjustment
+- Ability to change buzzer volume
+
 0.3.5 (Jan 2016) by Alex
 - Added SuperView feature
 - Added WaffleFPV preset
