@@ -1820,15 +1820,15 @@ getCleanUpInput ()
   read -p "${XYC_DELETE_VIDEO_PREVIEW_PROMPT} (${XYC_Y}/${XYC_N}) [${XYC_ENTER}=n]: " REPLY
   if [ "$REPLY" == ${XYC_Y} ]; then
     echo "${XYC_REMOVING} ${FUSED}/DCIM/**/*.THM"
-    lu_util exec "rm -f ${FUSED}/DCIM/**/*.THM"
+    rm -f ${FUSED}/DCIM/**/*.THM
     echo "${XYC_REMOVING} ${FUSED}/DCIM/**/*thm.mp4"
-    lu_util exec "rm -f ${FUSED}/DCIM/**/*thm.mp4"
+    rm -f ${FUSED}/DCIM/**/*thm.mp4
     echo ""
   fi
   read -p "${XYC_DELETE_RAW_PROMPT} (${XYC_Y}/${XYC_N}) [${XYC_ENTER}=n]: " REPLY
   if [ "$REPLY" == ${XYC_Y} ]; then
     echo "${XYC_REMOVING} ${FUSED}/DCIM/**/*.RAW"
-    lu_util exec "rm -f ${FUSED}/DCIM/**/*.RAW"
+    rm -f ${FUSED}/DCIM/**/*.RAW
     echo ""
     read -p "[${XYC_ENTER}]"
   fi
