@@ -27,6 +27,10 @@ This script runs inside the Xiaomi Yi camera and allows the user to enable RAW f
 
 # Changelog
 
+1.0.2 (Oct 2016) by Alex
+- Added 640x480 and 848x480 resolutions for FPV
+- Added AV out support for all resolutions
+
 1.0.1 (Feb 2016) by Alex
 - Simplified user interface for support different languages
 - Updated support for 8 languages
